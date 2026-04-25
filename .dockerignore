@@ -1,0 +1,9 @@
+.gradle/
+build/
+mcp-api/build/
+mcp-imp/build/
+buildSrc/build/
+.idea/
+.git/
+*.iml
+.DS_Store

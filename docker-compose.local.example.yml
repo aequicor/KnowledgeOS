@@ -1,0 +1,74 @@
+# ============================================================================
+# docker-compose.local.example.yml
+#
+# Copy to docker-compose.local.yml and customize for your projects.
+# Each project gets its own MCP service with isolated vault, indexes, and port.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
+# ============================================================================
+
+services:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Project template — replace "my-project" with your project name.
+  # Uncomment and duplicate this block for each project.
+  # ─────────────────────────────────────────────────────────────────────────
+  # mcp-my-project:
+  #   build: .
+  #   ports:
+  #     - "8081:8080"                        # unique host port per project
+  #   env_file: .env                         # shared vars (API keys, retrieval settings)
+  #   environment:
+  #     - CHROMA_URL=http://chromadb:8000
+  #     - CHROMA_COLLECTION=vault_my_project # unique collection per project
+  #     - BM25_INDEX_PATH=/app/index
+  #     - VAULT_PATH=/vault
+  #   volumes:
+  #     - ./vaults/my-project:/vault         # project vault directory
+  #     - bm25-my-project:/app/index         # named volume for BM25 index
+  #   depends_on:
+  #     chromadb:
+  #       condition: service_started
+  #   restart: unless-stopped
+
+  # ── Example: project "my-app" ──────────────────────────────────────────
+  mcp-my-app:
+    build: .
+    ports:
+      - "8081:8080"
+    env_file: .env
+    environment:
+      - CHROMA_URL=http://chromadb:8000
+      - CHROMA_COLLECTION=vault_my_app
+      - BM25_INDEX_PATH=/app/index
+      - VAULT_PATH=/vault
+    volumes:
+      - ./vaults/my-app:/vault
+      - bm25-my-app:/app/index
+    depends_on:
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+
+  # ── Example: project "another-project" ─────────────────────────────────
+  mcp-another-project:
+    build: .
+    ports:
+      - "8082:8080"
+    env_file: .env
+    environment:
+      - CHROMA_URL=http://chromadb:8000
+      - CHROMA_COLLECTION=vault_another_project
+      - BM25_INDEX_PATH=/app/index
+      - VAULT_PATH=/vault
+    volumes:
+      - ./vaults/another-project:/vault
+      - bm25-another-project:/app/index
+    depends_on:
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  bm25-my-app:
+  bm25-another-project:

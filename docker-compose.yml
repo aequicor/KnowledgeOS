@@ -1,0 +1,13 @@
+services:
+  chromadb:
+    image: chromadb/chroma
+    ports:
+      - "${CHROMA_PORT:-8000}:8000"
+    volumes:
+      - chroma-data:/chroma/chroma
+    restart: unless-stopped
+    environment:
+      - ALLOW_RESET=true
+
+volumes:
+  chroma-data:

@@ -1,0 +1,67 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "deepseek/deepseek-v4-pro",
+  "small_model": "deepseek/deepseek-v4-flash",
+  "instructions": ["CLAUDE.md"],
+  "autoupdate": true,
+  "permission": {
+    "edit": "allow",
+    "bash": "allow"
+  },
+  "compaction": {
+    "auto": true,
+    "prune": true,
+    "reserved": 10000
+  },
+  "watcher": {
+    "ignore": [
+      ".gradle/**",
+      "build/**",
+      ".kotlin/**",
+      "out/**",
+      "bin/**",
+      "node_modules/**",
+      ".idea/**",
+      "vault/**"
+    ]
+  },
+  "command": {
+    "build": {
+      "template": "Run ./gradlew build and fix any compilation errors.",
+      "description": "Build all modules",
+      "agent": "build"
+    },
+    "test": {
+      "template": "Run ./gradlew test and fix any failing tests.",
+      "description": "Run tests",
+      "agent": "build"
+    },
+    "lint": {
+      "template": "Run ./gradlew build and check for compilation warnings. Fix any issues found.",
+      "description": "Check for compilation issues",
+      "agent": "build"
+    },
+    "docker-up": {
+      "template": "Run Docker services: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d",
+      "description": "Start all Docker services",
+      "agent": "build"
+    },
+    "docker-build": {
+      "template": "Rebuild and restart all Docker services: docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build",
+      "description": "Docker build + restart all services",
+      "agent": "build"
+    }
+  },
+  "server": {
+    "port": 4096
+  },
+  "mcp": {
+    "knowledgeos": {
+      "type": "remote",
+      "url": "http://localhost:8081/mcp",
+      "enabled": true
+    }
+  },
+  "disabled_providers": [],
+  "experimental": {}
+}

@@ -1,0 +1,65 @@
+[versions]
+kotlin = "2.3.10"
+kotlinxDatetime = "0.7.1"
+kotlinxSerializationJSON = "1.9.0"
+kotlinxCoroutines = "1.10.2"
+ktor = "3.3.3"
+lucene = "9.12.1"
+kaml = "0.67.0"
+onnxruntime = "1.21.0"
+kotlinLogging = "7.0.3"
+slf4j = "2.0.16"
+junitJupiter = "5.12.2"
+kotest = "5.9.1"
+mockk = "1.13.17"
+mcpKotlinSdk = "0.11.1"
+
+[libraries]
+kotlinGradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlinxDatetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinxDatetime" }
+kotlinxSerializationJson = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinxSerializationJSON" }
+kotlinxCoroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinxCoroutines" }
+
+# MCP
+mcpKotlinSdk = { module = "io.modelcontextprotocol:kotlin-sdk", version.ref = "mcpKotlinSdk" }
+
+# Ktor server
+ktorServerCore = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
+ktorServerCio = { module = "io.ktor:ktor-server-cio", version.ref = "ktor" }
+ktorServerSse = { module = "io.ktor:ktor-server-sse", version.ref = "ktor" }
+ktorServerContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+
+# Ktor client
+ktorClientCore = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
+ktorClientCio = { module = "io.ktor:ktor-client-cio", version.ref = "ktor" }
+ktorClientContentNegotiation = { module = "io.ktor:ktor-client-content-negotiation", version.ref = "ktor" }
+ktorSerializationKotlinxJson = { module = "io.ktor:ktor-serialization-kotlinx-json", version.ref = "ktor" }
+ktorClientLogging = { module = "io.ktor:ktor-client-logging", version.ref = "ktor" }
+
+# Lucene (BM25)
+luceneCore = { module = "org.apache.lucene:lucene-core", version.ref = "lucene" }
+luceneAnalysisCommon = { module = "org.apache.lucene:lucene-analysis-common", version.ref = "lucene" }
+luceneQueryparser = { module = "org.apache.lucene:lucene-queryparser", version.ref = "lucene" }
+
+# YAML (frontmatter)
+kaml = { module = "com.charleskorn.kaml:kaml", version.ref = "kaml" }
+
+# ONNX Runtime (reranker)
+onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = "onnxruntime" }
+
+# Logging
+kotlinLogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlinLogging" }
+slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+
+# Testing
+junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }
+junitPlatformLauncher = { module = "org.junit.platform:junit-platform-launcher" }
+kotestAssertionsCore = { module = "io.kotest:kotest-assertions-core", version.ref = "kotest" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
+
+[bundles]
+ktorClient = ["ktorClientCore", "ktorClientCio", "ktorClientContentNegotiation", "ktorSerializationKotlinxJson"]
+lucene = ["luceneCore", "luceneAnalysisCommon", "luceneQueryparser"]
+
+[plugins]
+kotlinPluginSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
