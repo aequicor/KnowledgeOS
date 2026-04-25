@@ -33,7 +33,7 @@ class WriteGuidelineTool(private val vaultPath: Path) {
         val relatedWikilinks = params.related ?: emptyList()
         val relatedYaml = relatedWikilinks.joinToString("\n") { "  - $it" }
         val relatedSection = if (relatedWikilinks.isNotEmpty()) {
-            "\n## Связанные документы\n" + relatedWikilinks.joinToString("\n") { "- $it" }
+            "\n## Связанные документы\n" + relatedWikilinks.joinToString("\n") { "- [[$it]]" }
         } else ""
 
         val frontmatter = buildString {
