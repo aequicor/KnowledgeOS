@@ -1,7 +1,5 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "model": "deepseek/deepseek-v4-pro",
-  "small_model": "deepseek/deepseek-v4-flash",
   "instructions": ["CLAUDE.md", "rules/SEARCH_RULE.md"],
   "autoupdate": true,
   "permission": {

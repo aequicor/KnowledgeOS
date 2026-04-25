@@ -31,6 +31,16 @@ class IndexPipeline(
             if (bm25Index.isEmpty()) {
                 logger.info { "BM25 index empty, performing full reindex" }
                 reindex(vaultPath)
+            } else {
+                val indexedPaths = bm25Index.allDocPaths()
+                val allDocs = vaultReader.readAll()
+                val missing = allDocs.filter { it.path.toString() !in indexedPaths }
+                if (missing.isNotEmpty()) {
+                    logger.info { "Found ${missing.size} new documents not in index, indexing..." }
+                    for (doc in missing) {
+                        indexDocument(doc)
+                    }
+                }
             }
         }
 

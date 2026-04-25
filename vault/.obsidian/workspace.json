@@ -27,12 +27,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "how-to/add-mcp-tool.md",
+                "file": "guidelines/writing-guidelines.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "add-mcp-tool"
+              "title": "writing-guidelines"
             }
           }
         ],
@@ -109,7 +109,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "how-to/add-mcp-tool.md",
+                "file": "guidelines/writing-guidelines.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -119,7 +119,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Обратные ссылки для add-mcp-tool"
+              "title": "Обратные ссылки для writing-guidelines"
             }
           },
           {
@@ -128,12 +128,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "how-to/add-mcp-tool.md",
+                "file": "guidelines/writing-guidelines.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Исходящие ссылки из add-mcp-tool"
+              "title": "Исходящие ссылки из writing-guidelines"
             }
           },
           {
@@ -171,13 +171,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "how-to/add-mcp-tool.md",
+                "file": "guidelines/writing-guidelines.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Структура add-mcp-tool"
+              "title": "Структура writing-guidelines"
             }
           }
         ]
@@ -197,13 +197,15 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "5a2f666f4439f66a",
+  "active": "318e103d4eedbf30",
   "lastOpenFiles": [
+    "_INDEX.md",
+    "concepts/decisions/001-chromadb.md",
+    "how-to/add-mcp-tool.md",
+    "guidelines/search-rule.md",
     "guidelines/adding-mcp-tools.md",
     "concepts/architecture.md",
-    "how-to/add-mcp-tool.md",
     "reference/env-vars.md",
-    "_INDEX.md",
     "guidelines/writing-guidelines.md"
   ]
 }

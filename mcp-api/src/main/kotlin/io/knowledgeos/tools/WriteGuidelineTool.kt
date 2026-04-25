@@ -30,7 +30,12 @@ class WriteGuidelineTool(private val vaultPath: Path) {
         val filename = "${params.topic}.md"
         val filePath = guidelinesDir.resolve(filename)
 
-        val relatedStr = params.related?.joinToString(", ") { "  - $it" } ?: ""
+        val relatedWikilinks = params.related ?: emptyList()
+        val relatedYaml = relatedWikilinks.joinToString("\n") { "  - $it" }
+        val relatedSection = if (relatedWikilinks.isNotEmpty()) {
+            "\n## Связанные документы\n" + relatedWikilinks.joinToString("\n") { "- $it" }
+        } else ""
+
         val frontmatter = buildString {
             appendLine("---")
             appendLine("genre: guideline")
@@ -40,14 +45,14 @@ class WriteGuidelineTool(private val vaultPath: Path) {
             appendLine("confidence: high")
             appendLine("source: agent")
             appendLine("updated: ${java.time.YearMonth.now()}")
-            if (relatedStr.isNotEmpty()) {
+            if (relatedYaml.isNotEmpty()) {
                 appendLine("related:")
-                appendLine(relatedStr)
+                appendLine(relatedYaml)
             }
             appendLine("---")
         }
 
-        val fullContent = frontmatter + "\n" + params.content
+        val fullContent = frontmatter + "\n" + params.content + relatedSection
         Files.writeString(filePath, fullContent, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING)
 
         return Json.encodeToString(mapOf("status" to "created", "path" to vaultPath.relativize(filePath).toString()))

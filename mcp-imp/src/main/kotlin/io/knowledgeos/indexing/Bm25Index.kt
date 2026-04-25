@@ -91,6 +91,19 @@ class Bm25Index(indexPath: Path) {
 
     fun isEmpty(): Boolean = manager.numDocs() == 0
 
+    fun allDocPaths(): Set<String> {
+        val docPaths = mutableSetOf<String>()
+        for (ctx in manager.leaves()) {
+            val leafReader = ctx.reader()
+            for (i in 0 until leafReader.maxDoc()) {
+                val doc = leafReader.storedFields().document(i)
+                val path = doc.get("docPath")
+                if (path != null) docPaths.add(path)
+            }
+        }
+        return docPaths
+    }
+
     fun close() {
         manager.close()
         writer.close()
