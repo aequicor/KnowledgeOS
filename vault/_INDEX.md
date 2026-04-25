@@ -17,5 +17,6 @@ updated: 2026-04
 - [[concepts/decisions/001-chromadb]] — ADR: почему ChromaDB
 - [[concepts/decisions/002-deepseek]] — ADR: почему DeepSeek
 - [[guidelines/writing-guidelines]] — как писать гайдлайны
+- [[guidelines/documentation-structure]] — структура документации, жанры, frontmatter
 - [[reference/env-vars]] — переменные окружения
 - [[how-to/add-mcp-tool]] — как добавить новый MCP-инструмент

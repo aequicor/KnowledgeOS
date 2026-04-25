@@ -260,7 +260,7 @@ cp .env.example .env
 # → указываем DEEPSEEK_API_KEY
 
 # 3. Копируем и настраиваем локальный compose-файл
-cp docker-compose.local.example.yml docker-compose.local.yml
+cp docker-compose.local.yml.example docker-compose.local.yml
 # → правим под свой проект: имя сервиса, порт, путь к vault
 
 # 4. Создаём папку vault (если ещё нет)
