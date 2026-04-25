@@ -19,7 +19,7 @@ class Bm25Index(indexPath: Path) {
     private val writer = IndexWriter(directory, IndexWriterConfig(analyzer).apply {
         openMode = IndexWriterConfig.OpenMode.CREATE_OR_APPEND
     })
-    private val manager = DirectoryReader.open(writer, true, true)
+    private var manager = DirectoryReader.open(writer, true, true)
     private var searcher = IndexSearcher(manager)
 
     fun index(chunks: List<Chunk>) {
@@ -84,6 +84,7 @@ class Bm25Index(indexPath: Path) {
         val newReader = DirectoryReader.openIfChanged(oldReader)
         if (newReader != null) {
             oldReader.close()
+            manager = newReader
             searcher = IndexSearcher(newReader)
         }
     }

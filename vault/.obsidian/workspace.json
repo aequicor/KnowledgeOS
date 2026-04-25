@@ -197,8 +197,9 @@
       "bases:Создать новую базу": false
     }
   },
-  "active": "318e103d4eedbf30",
+  "active": "5a2f666f4439f66a",
   "lastOpenFiles": [
+    "guidelines/adding-mcp-tools.md",
     "concepts/architecture.md",
     "how-to/add-mcp-tool.md",
     "reference/env-vars.md",
