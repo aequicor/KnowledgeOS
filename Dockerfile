@@ -14,7 +14,7 @@ FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-RUN mkdir -p /app/index /vault /app/model/onnx
+RUN mkdir -p /app/index /vault /app/model/onnx /app/model/reranker/onnx
 
 RUN apt-get update -qq \
     && apt-get install -y -qq --no-install-recommends wget ca-certificates \
@@ -22,6 +22,10 @@ RUN apt-get update -qq \
         "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/resolve/main/onnx/model.onnx" \
     && wget -q -O /app/model/onnx/vocab.txt \
         "https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2/raw/main/vocab.txt" \
+    && wget -q -O /app/model/reranker/onnx/model.onnx \
+        "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2/resolve/main/onnx/model.onnx" \
+    && wget -q -O /app/model/reranker/onnx/vocab.txt \
+        "https://huggingface.co/cross-encoder/ms-marco-MiniLM-L-6-v2/raw/main/vocab.txt" \
     && apt-get purge -y -qq wget \
     && apt-get autoremove -y -qq \
     && rm -rf /var/lib/apt/lists/*

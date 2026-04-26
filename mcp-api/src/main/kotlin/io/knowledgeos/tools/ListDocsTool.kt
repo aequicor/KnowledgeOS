@@ -2,6 +2,9 @@ package io.knowledgeos.tools
 
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.encodeToJsonElement
+import kotlinx.serialization.json.put
 import java.nio.file.Files
 import java.nio.file.Path
 import kotlin.io.path.exists
@@ -33,6 +36,10 @@ class ListDocsTool(private val vaultPath: Path) {
             .map { vaultPath.relativize(it).toString().replace('\\', '/') }
             .sorted()
             .toList()
-        return Json.encodeToString(mapOf("status" to "ok", "docs" to docs, "count" to docs.size.toString()))
+        return Json.encodeToString(buildJsonObject {
+            put("status", "ok")
+            put("docs", Json.encodeToJsonElement(docs))
+            put("count", docs.size.toString())
+        })
     }
 }
