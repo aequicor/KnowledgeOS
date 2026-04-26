@@ -240,6 +240,76 @@ File watcher следит за vault. При изменении файла — �
 
 ---
 
+## Быстрый запуск
+
+Без клонирования репозитория — только Docker.
+
+### 1. Создайте файлы
+
+```
+my-project/
+├── docker-compose.yml
+├── .env
+└── vault/              ← сюда кладёте документацию
+```
+
+**`docker-compose.yml`**
+
+```yaml
+services:
+  chromadb:
+    image: chromadb/chroma
+    volumes:
+      - chroma-data:/chroma/chroma
+    restart: unless-stopped
+    environment:
+      - ALLOW_RESET=true
+
+  mcp:
+    image: aequicor/knowledgeos:latest
+    ports:
+      - "8081:8080"
+    env_file: .env
+    environment:
+      - CHROMA_URL=http://chromadb:8000
+      - CHROMA_COLLECTION=vault_my_project
+      - BM25_INDEX_PATH=/app/index
+      - VAULT_PATH=/vault
+    volumes:
+      - ./vault:/vault
+      - bm25-index:/app/index
+    depends_on:
+      chromadb:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  chroma-data:
+  bm25-index:
+```
+
+**`.env`**
+
+```dotenv
+DEEPSEEK_API_KEY=sk-...
+```
+
+### 2. Запустите
+
+```bash
+docker compose up -d
+```
+
+MCP-сервер будет доступен на `http://localhost:8081/mcp`.
+
+### 3. Обновление до новой версии
+
+```bash
+docker compose pull && docker compose up -d
+```
+
+---
+
 ## Быстрый старт (один проект)
 
 ### Требования
