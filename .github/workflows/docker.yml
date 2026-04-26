@@ -1,0 +1,55 @@
+name: Build & push Docker image
+
+on:
+  push:
+    branches: [master]
+    tags: ["v*"]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        # Skip login on pull requests — just build, don't push
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract image metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/knowledgeos
+          tags: |
+            # Push 'latest' on every master commit
+            type=raw,value=latest,enable={{is_default_branch}}
+            # Version tags from git: v1.2.3 → 1.2.3 and 1.2
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            # SHA-based tag for traceability
+            type=sha,format=short
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          # GitHub Actions layer cache — speeds up repeated builds significantly
+          # (Gradle compile layer and the ONNX model download are both cached)
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
