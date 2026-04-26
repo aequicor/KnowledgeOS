@@ -49,3 +49,4 @@ docker-compose.local.yml
 
 ### Enviroments ###
 .env
+/.claude/settings.local.json
