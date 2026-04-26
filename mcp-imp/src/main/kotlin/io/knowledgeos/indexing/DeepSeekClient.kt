@@ -22,8 +22,14 @@ class DeepSeekClient(
                 contentType(ContentType.Application.Json)
                 setBody(EmbedRequest(model = model, input = texts))
             }
+            if (!response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                throw DeepSeekException("Embedding API error ${response.status.value}: $body")
+            }
             val result = response.body<EmbedResponse>()
             result.data.map { it.embedding.toFloatArray() }
+        } catch (e: DeepSeekException) {
+            throw e
         } catch (e: Exception) {
             throw DeepSeekException("Embedding failed", e)
         }
@@ -39,8 +45,14 @@ class DeepSeekClient(
                     messages = listOf(ChatMessage(role = "user", content = prompt))
                 ))
             }
+            if (!response.status.isSuccess()) {
+                val body = response.bodyAsText()
+                throw DeepSeekException("Completion API error ${response.status.value}: $body")
+            }
             val result = response.body<ChatResponse>()
             result.choices.firstOrNull()?.message?.content ?: ""
+        } catch (e: DeepSeekException) {
+            throw e
         } catch (e: Exception) {
             throw DeepSeekException("Completion failed", e)
         }

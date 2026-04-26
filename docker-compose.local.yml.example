@@ -45,6 +45,7 @@ services:
     volumes:
       - ./vaults/my-app:/vault
       - bm25-my-app:/app/index
+      - bm25-models:/app/model
     depends_on:
       chromadb:
         condition: service_started
@@ -64,6 +65,7 @@ services:
     volumes:
       - ./vaults/another-project:/vault
       - bm25-another-project:/app/index
+      - bm25-models:/app/model
     depends_on:
       chromadb:
         condition: service_started
@@ -72,3 +74,4 @@ services:
 volumes:
   bm25-my-app:
   bm25-another-project:
+  bm25-models:

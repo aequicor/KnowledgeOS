@@ -17,7 +17,7 @@ object Config {
     val llmApiKey: String get() = System.getenv("LLM_API_KEY") ?: ""
     val llmBaseUrl: String get() = System.getenv("LLM_BASE_URL") ?: "https://openrouter.ai/api/v1"
     val embeddingsModel: String get() = System.getenv("EMBEDDINGS_MODEL") ?: "deepseek/deepseek-v4-flash"
-    val embeddingsLocal: Boolean get() = System.getenv("EMBEDDINGS_LOCAL")?.toBooleanStrictOrNull() ?: false
+    val embeddingsLocal: Boolean get() = System.getenv("EMBEDDINGS_LOCAL")?.toBooleanStrictOrNull() ?: true
     val embeddingsLocalModelPath: String get() = System.getenv("EMBEDDINGS_LOCAL_MODEL_PATH") ?: "/app/model/onnx/model.onnx"
     val embeddingsLocalVocabPath: String get() = System.getenv("EMBEDDINGS_LOCAL_VOCAB_PATH") ?: "/app/model/onnx/vocab.txt"
     val enrichmentModel: String get() = System.getenv("ENRICHMENT_MODEL") ?: "deepseek/deepseek-v4-flash"

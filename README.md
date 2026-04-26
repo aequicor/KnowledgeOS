@@ -278,6 +278,7 @@ services:
     volumes:
       - ./vault:/vault
       - bm25-index:/app/index
+      - bm25-models:/app/model         # ONNX models (download once, persist across rebuilds)
     depends_on:
       chromadb:
         condition: service_started
@@ -286,6 +287,7 @@ services:
 volumes:
   chroma-data:
   bm25-index:
+  bm25-models:
 ```
 
 **`.env`**
@@ -355,6 +357,7 @@ services:
     volumes:
       - ./vaults/new-project:/vault              # уникальная папка vault
       - bm25-new-project:/app/index              # уникальный volume для BM25
+      - bm25-models:/app/model                    # ONNX models
     depends_on:
       chromadb:
         condition: service_started
@@ -362,6 +365,7 @@ services:
 
 volumes:
   bm25-new-project:
+  bm25-models:
 ```
 
 ### Что должно быть уникальным для каждого проекта
@@ -379,9 +383,10 @@ volumes:
 ```json
 {
   "mcpServers": {
-    "knowledge-my-app":        { "url": "http://localhost:8081/mcp" },
-    "knowledge-another":       { "url": "http://localhost:8082/mcp" },
-    "knowledge-new-project":   { "url": "http://localhost:8083/mcp" }
+    "knowledge-my-app": {
+      "type": "remote",
+      "url": "http://localhost:8081/mcp"
+    }
   }
 }
 ```
@@ -439,6 +444,7 @@ services:
     volumes:
       - ./vaults/my-app:/vault              # bind mount — vault проекта
       - bm25-my-app:/app/index              # named volume — персистентный BM25 индекс
+      - bm25-models:/app/model              # named volume — ONNX модели (скачиваются один раз)
 
   chromadb:
     volumes:
@@ -446,6 +452,7 @@ services:
 
 volumes:
   bm25-my-app:
+  bm25-models:
   chroma-data:
 ```
 
