@@ -33,10 +33,10 @@ fun main() = runBlocking {
         }
     }
 
-    val deepSeekClient = if (Config.deepseekApiKey.isNotBlank() && Config.deepseekApiKey != "sk-...") {
-        DeepSeekClient(Config.deepseekBaseUrl, Config.deepseekApiKey, httpClient)
+    val deepSeekClient = if (Config.llmApiKey.isNotBlank() && Config.llmApiKey != "sk-...") {
+        DeepSeekClient(Config.llmBaseUrl, Config.llmApiKey, httpClient)
     } else {
-        logger.warn { "DEEPSEEK_API_KEY not configured, enrichment disabled" }
+        logger.warn { "LLM_API_KEY not configured, enrichment disabled" }
         null
     }
 

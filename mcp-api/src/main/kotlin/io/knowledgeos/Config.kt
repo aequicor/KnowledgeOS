@@ -14,8 +14,8 @@ object Config {
     val rerankerLocalModelPath: String get() = System.getenv("RERANKER_LOCAL_MODEL_PATH") ?: "/app/model/reranker/onnx/model.onnx"
     val rerankerLocalVocabPath: String get() = System.getenv("RERANKER_LOCAL_VOCAB_PATH") ?: "/app/model/reranker/onnx/vocab.txt"
 
-    val deepseekApiKey: String get() = System.getenv("DEEPSEEK_API_KEY") ?: ""
-    val deepseekBaseUrl: String get() = System.getenv("DEEPSEEK_BASE_URL") ?: "https://openrouter.ai/api/v1"
+    val llmApiKey: String get() = System.getenv("LLM_API_KEY") ?: ""
+    val llmBaseUrl: String get() = System.getenv("LLM_BASE_URL") ?: "https://openrouter.ai/api/v1"
     val embeddingsModel: String get() = System.getenv("EMBEDDINGS_MODEL") ?: "deepseek/deepseek-v4-flash"
     val embeddingsLocal: Boolean get() = System.getenv("EMBEDDINGS_LOCAL")?.toBooleanStrictOrNull() ?: false
     val embeddingsLocalModelPath: String get() = System.getenv("EMBEDDINGS_LOCAL_MODEL_PATH") ?: "/app/model/onnx/model.onnx"

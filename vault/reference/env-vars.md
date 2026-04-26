@@ -33,12 +33,12 @@ updated: 2026-04
 | `RETRIEVAL_RERANKER_ENABLED` | `true` | Включить reranker |
 | `RETRIEVAL_RERANKER_MODEL` | `cross-encoder/ms-marco-MiniLM-L-6-v2` | Модель reranker'а |
 
-## DeepSeek
+## LLM (OpenAI-compatible)
 
 | Переменная | По умолчанию | Описание |
 |---|---|---|
-| `DEEPSEEK_API_KEY` | — | API ключ |
-| `DEEPSEEK_BASE_URL` | `https://openrouter.ai/api/v1` | Базовый URL |
+| `LLM_API_KEY` | — | API ключ |
+| `LLM_BASE_URL` | `https://openrouter.ai/api/v1` | Базовый URL |
 | `EMBEDDINGS_MODEL` | `deepseek/deepseek-v4-flash` | Модель для embeddings |
 | `ENRICHMENT_MODEL` | `deepseek/deepseek-v4-flash` | Модель для enrichment |
 | `ENRICHMENT_ENABLED` | `true` | Включить enrichment |

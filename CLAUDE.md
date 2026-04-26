@@ -53,7 +53,7 @@ KnowledgeOS is an MCP server that gives AI agents access to a documentation vaul
 
 ## Configuration
 
-All config via `.env` (copy from `.env.example`). Key variables: `DEEPSEEK_API_KEY`, `VAULT_PATH`, `CHROMA_URL`. See `.env.example` for the full list.
+All config via `.env` (copy from `.env.example`). Key variables: `LLM_API_KEY`, `VAULT_PATH`, `CHROMA_URL`. See `.env.example` for the full list.
 
 ## Module registration
 

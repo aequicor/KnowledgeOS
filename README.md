@@ -291,8 +291,11 @@ volumes:
 **`.env`**
 
 ```dotenv
-DEEPSEEK_API_KEY=sk-...
+LLM_API_KEY=sk-...
+LLM_BASE_URL=https://openrouter.ai/api/v1
 ```
+
+> **Важно:** добавьте `.env` в `.gitignore`, чтобы ключ не попал в репозиторий.
 
 ### 2. Запустите
 
@@ -392,9 +395,9 @@ volumes:
 ```dotenv
 # .env.example
 
-# DeepSeek / OpenRouter (embeddings + enrichment)
-DEEPSEEK_API_KEY=sk-...
-DEEPSEEK_BASE_URL=https://openrouter.ai/api/v1
+# OpenAI-compatible LLM (enrichment only — OpenRouter, DeepSeek, OpenAI, etc.)
+LLM_API_KEY=sk-...
+LLM_BASE_URL=https://openrouter.ai/api/v1
 EMBEDDINGS_MODEL=deepseek/deepseek-v4-flash
 ENRICHMENT_MODEL=deepseek/deepseek-v4-flash
 ENRICHMENT_ENABLED=true
@@ -414,6 +417,8 @@ VAULT_WATCH=true
 CHROMA_URL=http://chromadb:8000
 CHROMA_PORT=8000
 ```
+
+> **Важно:** добавьте `.env` в `.gitignore`, чтобы ключ `LLM_API_KEY` не попал в репозиторий.
 
 ### `docker-compose.local.yml` — параметры конкретного проекта
 
