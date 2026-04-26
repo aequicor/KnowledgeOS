@@ -3,6 +3,8 @@ package io.knowledgeos
 import io.knowledgeos.indexing.*
 import io.knowledgeos.retrieval.*
 import io.knowledgeos.server.McpServer
+import io.knowledgeos.tools.GetDocTool
+import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
 import io.knowledgeos.tools.WriteGuidelineTool
@@ -98,7 +100,19 @@ fun main() = runBlocking {
     val vectorRetriever = VectorRetriever(deepSeekClient, vectorIndex, Config.embeddingsModel, localEmbedder)
 
     val wikilinkRetriever = WikilinkRetriever(wikilinkGraph, bm25Index)
-    val reranker = IdentityReranker()
+    val reranker: Reranker = if (Config.retrievalRerankerEnabled) {
+        try {
+            OnnxReranker(Config.rerankerLocalModelPath, Config.rerankerLocalVocabPath).also {
+                logger.info { "OnnxReranker enabled: ${Config.rerankerLocalModelPath}" }
+            }
+        } catch (e: Exception) {
+            logger.warn(e) { "Failed to load OnnxReranker, falling back to IdentityReranker" }
+            IdentityReranker()
+        }
+    } else {
+        logger.info { "Reranker disabled, using IdentityReranker" }
+        IdentityReranker()
+    }
 
     val retrievalPipeline = RetrievalPipeline(
         bm25Retriever = bm25Retriever,
@@ -112,12 +126,16 @@ fun main() = runBlocking {
     val searchDocsTool = SearchDocsTool(retrievalPipeline)
     val writeGuidelineTool = WriteGuidelineTool(vaultPath)
     val updateDocTool = UpdateDocTool(vaultPath)
+    val getDocTool = GetDocTool(vaultPath)
+    val listDocsTool = ListDocsTool(vaultPath)
 
     val mcpServer = McpServer(
         port = Config.serverPort,
         searchDocsTool = searchDocsTool,
         writeGuidelineTool = writeGuidelineTool,
-        updateDocTool = updateDocTool
+        updateDocTool = updateDocTool,
+        getDocTool = getDocTool,
+        listDocsTool = listDocsTool
     )
 
     Runtime.getRuntime().addShutdownHook(Thread {
@@ -126,6 +144,7 @@ fun main() = runBlocking {
             indexPipeline.stop()
             bm25Index.close()
             localEmbedder?.close()
+            (reranker as? OnnxReranker)?.close()
             httpClient.close()
             mcpServer.stop()
         }

@@ -1,5 +1,7 @@
 package io.knowledgeos.server
 
+import io.knowledgeos.tools.GetDocTool
+import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
 import io.knowledgeos.tools.WriteGuidelineTool
@@ -19,7 +21,9 @@ class McpServer(
     private val port: Int,
     searchDocsTool: SearchDocsTool,
     writeGuidelineTool: WriteGuidelineTool,
-    updateDocTool: UpdateDocTool
+    updateDocTool: UpdateDocTool,
+    getDocTool: GetDocTool,
+    listDocsTool: ListDocsTool
 ) {
     private var server: Any? = null
 
@@ -32,7 +36,7 @@ class McpServer(
         }
         install(SSE)
         routing {
-            mcpRoutes(searchDocsTool, writeGuidelineTool, updateDocTool)
+            mcpRoutes(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
         }
     }
 

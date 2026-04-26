@@ -1,6 +1,8 @@
 package io.knowledgeos.server
 
 import io.github.oshai.kotlinlogging.KotlinLogging
+import io.knowledgeos.tools.GetDocTool
+import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
 import io.knowledgeos.tools.WriteGuidelineTool
@@ -16,11 +18,13 @@ private val mcpLog = KotlinLogging.logger {}
 fun Routing.mcpRoutes(
     searchDocsTool: SearchDocsTool,
     writeGuidelineTool: WriteGuidelineTool,
-    updateDocTool: UpdateDocTool
+    updateDocTool: UpdateDocTool,
+    getDocTool: GetDocTool,
+    listDocsTool: ListDocsTool
 ) {
     route("/mcp") {
         mcp {
-            createMcpServer(searchDocsTool, writeGuidelineTool, updateDocTool)
+            createMcpServer(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
         }
     }
 }
@@ -28,7 +32,9 @@ fun Routing.mcpRoutes(
 private fun createMcpServer(
     searchDocsTool: SearchDocsTool,
     writeGuidelineTool: WriteGuidelineTool,
-    updateDocTool: UpdateDocTool
+    updateDocTool: UpdateDocTool,
+    getDocTool: GetDocTool,
+    listDocsTool: ListDocsTool
 ): Server {
     val server = Server(
         serverInfo = Implementation("KnowledgeOS", "0.1.0"),
@@ -120,15 +126,60 @@ private fun createMcpServer(
                         put("type", JsonPrimitive("string"))
                         put("description", JsonPrimitive("New markdown content"))
                     })
+                    put("preserve_frontmatter", buildJsonObject {
+                        put("type", JsonPrimitive("boolean"))
+                        put("description", JsonPrimitive("If true and content has no frontmatter, keep the original document's frontmatter"))
+                    })
                 },
                 required = listOf("path", "content")
             ),
-            description = "Update an existing document in the vault. Replaces the file content atomically."
+            description = "Update an existing document in the vault. Set preserve_frontmatter=true to update only the body while keeping the original frontmatter."
         )
     ) { request: CallToolRequest ->
         val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
         val docContent = request.arguments?.get("content")?.jsonPrimitive?.content ?: ""
-        val resultText = updateDocTool.execute(UpdateDocTool.UpdateParams(docPath, docContent))
+        val preserveFm = request.arguments?.get("preserve_frontmatter")?.jsonPrimitive?.booleanOrNull ?: false
+        val resultText = updateDocTool.execute(UpdateDocTool.UpdateParams(docPath, docContent, preserveFm))
+        CallToolResult(content = listOf(TextContent(text = resultText)))
+    }
+
+    server.addTool(
+        Tool(
+            name = "get_doc",
+            inputSchema = ToolSchema(
+                properties = buildJsonObject {
+                    put("path", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Path to document relative to vault root"))
+                    })
+                },
+                required = listOf("path")
+            ),
+            description = "Read the full content of a document from the vault by its path."
+        )
+    ) { request: CallToolRequest ->
+        val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
+        val resultText = getDocTool.execute(GetDocTool.GetParams(docPath))
+        CallToolResult(content = listOf(TextContent(text = resultText)))
+    }
+
+    server.addTool(
+        Tool(
+            name = "list_docs",
+            inputSchema = ToolSchema(
+                properties = buildJsonObject {
+                    put("directory", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Optional subdirectory to list (relative to vault root). Lists all docs if omitted."))
+                    })
+                },
+                required = emptyList()
+            ),
+            description = "List all markdown documents in the vault (or a subdirectory). Returns relative paths."
+        )
+    ) { request: CallToolRequest ->
+        val dir = request.arguments?.get("directory")?.jsonPrimitive?.contentOrNull
+        val resultText = listDocsTool.execute(ListDocsTool.ListParams(dir))
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 

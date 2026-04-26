@@ -2,7 +2,6 @@ package io.knowledgeos.retrieval
 
 import io.knowledgeos.indexing.Bm25Index
 import io.knowledgeos.vault.WikilinkGraph
-import org.apache.lucene.search.MatchAllDocsQuery
 
 class WikilinkRetriever(
     private val wikilinkGraph: WikilinkGraph,
@@ -13,11 +12,12 @@ class WikilinkRetriever(
         val expanded = mutableListOf<ScoredChunk>()
         expanded.addAll(chunks)
 
-        val docIds = chunks.mapNotNull { extractDocId(it.chunkId) }.distinct()
-        val relatedDocs = docIds.flatMap { wikilinkGraph.expand(it, hops) }.toSet()
+        val docIds = chunks.map { extractDocId(it.chunkId) }.distinct()
+        val sourceDocIds = docIds.toSet()
+        val relatedDocs = docIds.flatMap { wikilinkGraph.expand(it, hops) }.toSet() - sourceDocIds
 
         for (relatedDoc in relatedDocs) {
-            val relatedChunks = bm25Index.searchAll(topK = 5)
+            val relatedChunks = bm25Index.searchByDocId(relatedDoc, topK = 5)
             for (chunk in relatedChunks) {
                 if (chunk.chunkId !in seen) {
                     seen.add(chunk.chunkId)

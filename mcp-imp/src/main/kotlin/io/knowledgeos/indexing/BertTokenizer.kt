@@ -48,6 +48,34 @@ class BertTokenizer(vocabPath: String) {
         return tokens.toIntArray()
     }
 
+    /**
+     * Encodes a (textA, textB) pair as [CLS] A [SEP] B [SEP] for cross-encoder models.
+     * Returns (input_ids, token_type_ids): segment 0 for A, segment 1 for B.
+     */
+    fun tokenizePair(textA: String, textB: String): Pair<IntArray, IntArray> {
+        val inputIds = mutableListOf<Int>()
+        val typeIds = mutableListOf<Int>()
+
+        inputIds.add(clsId); typeIds.add(0)
+        for (word in whitespaceTokenize(textA.lowercase())) {
+            for (sub in wordpieceTokenize(word)) {
+                if (inputIds.size >= maxLength - 2) break
+                inputIds.add(sub); typeIds.add(0)
+            }
+        }
+        inputIds.add(sepId); typeIds.add(0)
+
+        for (word in whitespaceTokenize(textB.lowercase())) {
+            for (sub in wordpieceTokenize(word)) {
+                if (inputIds.size >= maxLength - 1) break
+                inputIds.add(sub); typeIds.add(1)
+            }
+        }
+        inputIds.add(sepId); typeIds.add(1)
+
+        return inputIds.toIntArray() to typeIds.toIntArray()
+    }
+
     private fun whitespaceTokenize(text: String): List<String> {
         return text.split(Regex("\\s+")).filter { it.isNotBlank() }
     }

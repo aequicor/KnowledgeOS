@@ -54,7 +54,6 @@ class VaultWatcher(
                 }
             }
         }
-        registerDirectoryWatchers()
     }
 
     fun stop() {
@@ -75,18 +74,6 @@ class VaultWatcher(
     private fun registerNested(path: Path) {
         if (Files.isDirectory(path)) {
             registerAll(path)
-        }
-    }
-
-    private fun registerDirectoryWatchers() {
-        watchJob = scope.launch {
-            delay(500)
-            val subdirs = Files.walk(vaultPath)
-                .filter { Files.isDirectory(it) && it !in watchedDirs }
-                .toList()
-            for (dir in subdirs) {
-                registerAll(dir)
-            }
         }
     }
 

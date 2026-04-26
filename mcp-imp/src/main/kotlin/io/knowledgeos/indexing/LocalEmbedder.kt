@@ -50,6 +50,7 @@ class LocalEmbedder(
         val attentionMaskTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(flatAttentionMask), shape)
         val tokenTypeIdsTensor = OnnxTensor.createTensor(env, LongBuffer.wrap(flatTokenTypeIds), shape)
 
+        val seqLengths = tokenized.map { it.size }
         return try {
             val inputs = mapOf(
                 "input_ids" to inputIdsTensor,
@@ -59,8 +60,7 @@ class LocalEmbedder(
             val result: List<FloatArray>
             session.run(inputs).use { out ->
                 val tensor = out.get(0) as OnnxTensor
-                val raw = tensor.value
-                result = extractEmbeddings(raw)
+                result = extractEmbeddings(tensor.value, seqLengths)
             }
             result
         } finally {
@@ -71,13 +71,28 @@ class LocalEmbedder(
     }
 
     @Suppress("UNCHECKED_CAST")
-    private fun extractEmbeddings(raw: Any): List<FloatArray> {
+    private fun extractEmbeddings(raw: Any, seqLengths: List<Int>): List<FloatArray> {
+        // 2D [batch, hidden] — already pooled (e.g. sentence-transformers with pooling layer)
         if (raw is Array<*> && raw.isNotEmpty() && raw[0] is FloatArray) {
             return (raw as Array<FloatArray>).toList()
         }
-        if (raw is Array<*> && raw.isNotEmpty() && raw[0] is Array<*> && (raw[0] as Array<*>).isNotEmpty() && (raw[0] as Array<*>)[0] is FloatArray) {
+        // 3D [batch, seq_len, hidden] — mean-pool over non-padding tokens
+        if (raw is Array<*> && raw.isNotEmpty() && raw[0] is Array<*> &&
+            (raw[0] as Array<*>).isNotEmpty() && (raw[0] as Array<*>)[0] is FloatArray
+        ) {
             val arr3d = raw as Array<Array<FloatArray>>
-            return arr3d.map { it[0] }
+            return arr3d.mapIndexed { batchIdx, seqTokens ->
+                val seqLen = seqLengths[batchIdx]
+                val hiddenSize = seqTokens[0].size
+                val pooled = FloatArray(hiddenSize)
+                for (tokenIdx in 0 until seqLen) {
+                    for (dim in 0 until hiddenSize) {
+                        pooled[dim] += seqTokens[tokenIdx][dim]
+                    }
+                }
+                for (dim in 0 until hiddenSize) pooled[dim] /= seqLen
+                pooled
+            }
         }
         return emptyList()
     }

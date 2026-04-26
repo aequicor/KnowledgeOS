@@ -11,6 +11,8 @@ object Config {
     val retrievalWikilinksHops: Int get() = System.getenv("RETRIEVAL_WIKILINKS_HOPS")?.toIntOrNull() ?: 1
     val retrievalRerankerEnabled: Boolean get() = System.getenv("RETRIEVAL_RERANKER_ENABLED")?.toBooleanStrictOrNull() ?: true
     val retrievalRerankerModel: String get() = System.getenv("RETRIEVAL_RERANKER_MODEL") ?: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+    val rerankerLocalModelPath: String get() = System.getenv("RERANKER_LOCAL_MODEL_PATH") ?: "/app/model/reranker/onnx/model.onnx"
+    val rerankerLocalVocabPath: String get() = System.getenv("RERANKER_LOCAL_VOCAB_PATH") ?: "/app/model/reranker/onnx/vocab.txt"
 
     val deepseekApiKey: String get() = System.getenv("DEEPSEEK_API_KEY") ?: ""
     val deepseekBaseUrl: String get() = System.getenv("DEEPSEEK_BASE_URL") ?: "https://openrouter.ai/api/v1"

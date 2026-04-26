@@ -27,6 +27,7 @@ class Bm25Index(indexPath: Path) {
             deleteByChunkId(chunk.id)
             val doc = LuceneDoc()
             doc.add(StringField("id", chunk.id, Field.Store.YES))
+            doc.add(StringField("docId", chunk.id.substringBeforeLast("_"), Field.Store.NO))
             doc.add(StringField("docPath", chunk.docPath, Field.Store.YES))
             doc.add(TextField("text", chunk.contextualizedText, Field.Store.YES))
             doc.add(StringField("genre", chunk.frontmatter.genre, Field.Store.YES))
@@ -55,6 +56,9 @@ class Bm25Index(indexPath: Path) {
     }
 
     fun searchAll(topK: Int): List<ScoredChunk> = executeQuery(MatchAllDocsQuery(), topK)
+
+    fun searchByDocId(docId: String, topK: Int): List<ScoredChunk> =
+        executeQuery(TermQuery(Term("docId", docId)), topK)
 
     private fun executeQuery(query: org.apache.lucene.search.Query, topK: Int): List<ScoredChunk> {
         val topDocs = searcher.search(query, topK)
