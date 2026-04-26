@@ -308,7 +308,8 @@ MCP-сервер будет доступен на `http://localhost:8081/mcp`.
 ### 3. Обновление до новой версии
 
 ```bash
-docker compose pull && docker compose up -d
+docker compose -f knowledge-docker-compose.yml pull
+docker compose -f knowledge-docker-compose.yml up -d
 ```
 
 ---
