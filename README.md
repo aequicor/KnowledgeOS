@@ -310,50 +310,6 @@ docker compose pull && docker compose up -d
 
 ---
 
-## Быстрый старт (один проект)
-
-### Требования
-
-- Docker Desktop
-- OpenCode
-- Obsidian (опционально, vault работает как обычная папка)
-
-### Запуск
-
-```bash
-# 1. Клонируем репозиторий
-git clone https://github.com/your-org/knowledgeos
-cd knowledgeos
-
-# 2. Копируем и заполняем переменные окружения
-cp .env.example .env
-# → указываем DEEPSEEK_API_KEY
-
-# 3. Копируем и настраиваем локальный compose-файл
-cp docker-compose.local.yml.example docker-compose.local.yml
-# → правим под свой проект: имя сервиса, порт, путь к vault
-
-# 4. Создаём папку vault (если ещё нет)
-mkdir -p vaults/my-app
-
-# 5. Поднимаем все сервисы
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d
-
-# 6. Подключаем к OpenCode
-# В opencode.json добавляем MCP сервер:
-# "mcpServers": {
-#   "knowledge": { "url": "http://localhost:8081/mcp" }
-# }
-```
-
-### Ребилд и рестарт MCP сервера
-
-```bash
-docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build
-```
-
----
-
 ## Несколько проектов
 
 Каждый проект — отдельный MCP-контейнер со своим vault, индексами и портом.
@@ -384,7 +340,7 @@ knowledgeos/
 ```yaml
 services:
   mcp-new-project:
-    build: .
+    image: aequicor/knowledgeos:latest
     ports:
       - "8083:8080"                              # уникальный порт
     env_file: .env
