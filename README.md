@@ -248,12 +248,12 @@ File watcher следит за vault. При изменении файла — �
 
 ```
 my-project/
-├── docker-compose.yml
+├── knowledge-docker-compose.yml
 ├── .env
 └── vault/              ← сюда кладёте документацию
 ```
 
-**`docker-compose.yml`**
+**`knowledge-docker-compose.yml`**
 
 ```yaml
 services:
@@ -297,7 +297,7 @@ DEEPSEEK_API_KEY=sk-...
 ### 2. Запустите
 
 ```bash
-docker compose up -d
+docker compose -f knowledge-docker-compose.yml up -d
 ```
 
 MCP-сервер будет доступен на `http://localhost:8081/mcp`.
