@@ -9,6 +9,7 @@ kaml = "0.67.0"
 onnxruntime = "1.21.0"
 kotlinLogging = "7.0.3"
 slf4j = "2.0.16"
+logback = "1.5.18"
 junitJupiter = "5.12.2"
 kotest = "5.9.1"
 mockk = "1.13.17"
@@ -49,7 +50,7 @@ onnxruntime = { module = "com.microsoft.onnxruntime:onnxruntime", version.ref = 
 
 # Logging
 kotlinLogging = { module = "io.github.oshai:kotlin-logging-jvm", version.ref = "kotlinLogging" }
-slf4jSimple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
+logbackClassic = { module = "ch.qos.logback:logback-classic", version.ref = "logback" }
 
 # Testing
 junitJupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junitJupiter" }

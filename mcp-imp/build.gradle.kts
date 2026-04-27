@@ -16,7 +16,7 @@ dependencies {
     implementation(libs.onnxruntime)
 
     implementation(libs.kotlinLogging)
-    runtimeOnly(libs.slf4jSimple)
+    runtimeOnly(libs.logbackClassic)
 
     testImplementation(libs.junitJupiter)
     testImplementation(libs.kotestAssertionsCore)

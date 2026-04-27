@@ -1,5 +1,6 @@
 package io.knowledgeos.indexing
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import io.ktor.client.*
 import io.ktor.client.call.*
 import io.ktor.client.request.*
@@ -7,6 +8,8 @@ import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+
+private val logger = KotlinLogging.logger {}
 
 class DeepSeekClient(
     private val baseUrl: String,
@@ -16,6 +19,7 @@ class DeepSeekClient(
     private val json = Json { ignoreUnknownKeys = true }
 
     suspend fun embed(texts: List<String>, model: String): List<FloatArray> {
+        logger.trace { ">>> embed request: model=$model texts=${texts.size}" }
         return try {
             val response: HttpResponse = client.post("$baseUrl/embeddings") {
                 header("Authorization", "Bearer $apiKey")
@@ -24,9 +28,11 @@ class DeepSeekClient(
             }
             if (!response.status.isSuccess()) {
                 val body = response.bodyAsText()
+                logger.debug { "<<< embed error ${response.status.value}: $body" }
                 throw DeepSeekException("Embedding API error ${response.status.value}: $body")
             }
             val result = response.body<EmbedResponse>()
+            logger.trace { "<<< embed response: ${result.data.size} vectors" }
             result.data.map { it.embedding.toFloatArray() }
         } catch (e: DeepSeekException) {
             throw e
@@ -36,6 +42,7 @@ class DeepSeekClient(
     }
 
     suspend fun complete(prompt: String, model: String): String {
+        logger.trace { ">>> complete request: model=$model prompt=${prompt.take(120).replace('\n', ' ')}…" }
         return try {
             val response: HttpResponse = client.post("$baseUrl/chat/completions") {
                 header("Authorization", "Bearer $apiKey")
@@ -47,10 +54,13 @@ class DeepSeekClient(
             }
             if (!response.status.isSuccess()) {
                 val body = response.bodyAsText()
+                logger.debug { "<<< complete error ${response.status.value}: $body" }
                 throw DeepSeekException("Completion API error ${response.status.value}: $body")
             }
             val result = response.body<ChatResponse>()
-            result.choices.firstOrNull()?.message?.content ?: ""
+            val content = result.choices.firstOrNull()?.message?.content ?: ""
+            logger.trace { "<<< complete response: ${content.take(200).replace('\n', ' ')}" }
+            content
         } catch (e: DeepSeekException) {
             throw e
         } catch (e: Exception) {

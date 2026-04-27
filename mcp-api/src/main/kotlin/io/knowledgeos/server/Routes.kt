@@ -15,6 +15,18 @@ import kotlinx.serialization.json.*
 
 private val mcpLog = KotlinLogging.logger {}
 
+private const val CYAN = "[36m"
+private const val GREEN = "[32m"
+private const val RESET = "[0m"
+
+private val prettyJson = Json { prettyPrint = true }
+
+private fun String.prettyForLog(): String = try {
+    prettyJson.encodeToString(prettyJson.parseToJsonElement(this))
+} catch (_: Exception) {
+    this
+}
+
 fun Routing.mcpRoutes(
     searchDocsTool: SearchDocsTool,
     writeGuidelineTool: WriteGuidelineTool,
@@ -68,12 +80,12 @@ private fun createMcpServer(
             description = "Search documentation vault for relevant chunks. Returns top-K chunks from the retrieval pipeline."
         )
     ) { request: CallToolRequest ->
-        mcpLog.info { "search_docs arguments: ${request.arguments}" }
         val query = request.arguments?.get("query")?.jsonPrimitive?.content ?: ""
         val genre = request.arguments?.get("genre")?.jsonPrimitive?.contentOrNull
         val topic = request.arguments?.get("topic")?.jsonPrimitive?.contentOrNull
-        mcpLog.info { "search_docs query='$query' genre='$genre' topic='$topic'" }
+        mcpLog.debug { "${CYAN}search_docs called: query='$query' genre=$genre topic=$topic${RESET}" }
         val resultText = searchDocsTool.execute(SearchDocsTool.SearchParams(query, genre, topic))
+        mcpLog.debug { "${GREEN}search_docs result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -109,7 +121,9 @@ private fun createMcpServer(
         val topic = request.arguments?.get("topic")?.jsonPrimitive?.content ?: ""
         val library = request.arguments?.get("library")?.jsonPrimitive?.contentOrNull
         val related = request.arguments?.get("related")?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull }
+        mcpLog.debug { "${CYAN}write_guideline called: topic='$topic' library=$library related=$related\n$content${RESET}" }
         val resultText = writeGuidelineTool.execute(WriteGuidelineTool.WriteParams(content, topic, library, related))
+        mcpLog.debug { "${GREEN}write_guideline result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -139,7 +153,9 @@ private fun createMcpServer(
         val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
         val docContent = request.arguments?.get("content")?.jsonPrimitive?.content ?: ""
         val preserveFm = request.arguments?.get("preserve_frontmatter")?.jsonPrimitive?.booleanOrNull ?: false
+        mcpLog.debug { "${CYAN}update_doc called: path='$docPath' preserve_frontmatter=$preserveFm\n$docContent${RESET}" }
         val resultText = updateDocTool.execute(UpdateDocTool.UpdateParams(docPath, docContent, preserveFm))
+        mcpLog.debug { "${GREEN}update_doc result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -159,7 +175,9 @@ private fun createMcpServer(
         )
     ) { request: CallToolRequest ->
         val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
+        mcpLog.debug { "${CYAN}get_doc called: path='$docPath'${RESET}" }
         val resultText = getDocTool.execute(GetDocTool.GetParams(docPath))
+        mcpLog.debug { "${GREEN}get_doc result (path='$docPath'): ${resultText.take(200).replace('\n', ' ')}…${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -179,7 +197,9 @@ private fun createMcpServer(
         )
     ) { request: CallToolRequest ->
         val dir = request.arguments?.get("directory")?.jsonPrimitive?.contentOrNull
+        mcpLog.debug { "${CYAN}list_docs called: directory=$dir${RESET}" }
         val resultText = listDocsTool.execute(ListDocsTool.ListParams(dir))
+        mcpLog.debug { "${GREEN}list_docs result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 

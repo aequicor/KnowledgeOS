@@ -24,13 +24,13 @@ class VectorIndex(
 
     suspend fun ensureCollection() {
         collectionId = try {
+            val resp: ChromaCollectionResponse = client.get("${collectionsBase()}/$collectionName").body()
+            resp.id
+        } catch (e: Exception) {
             val resp: ChromaCollectionResponse = client.post(collectionsBase()) {
                 contentType(ContentType.Application.Json)
                 setBody(json.encodeToString(ChromaCreateRequest(name = collectionName)))
             }.body()
-            resp.id
-        } catch (e: Exception) {
-            val resp: ChromaCollectionResponse = client.get("${collectionsBase()}/$collectionName").body()
             resp.id
         }
     }
