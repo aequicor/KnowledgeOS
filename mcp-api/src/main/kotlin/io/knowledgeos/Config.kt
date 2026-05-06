@@ -5,6 +5,21 @@ object Config {
     val vaultWatch: Boolean get() = System.getenv("VAULT_WATCH")?.toBooleanStrictOrNull() ?: true
     val serverPort: Int get() = System.getenv("SERVER_PORT")?.toIntOrNull() ?: 8080
 
+    val mcpDnsRebindingProtection: Boolean
+        get() = System.getenv("MCP_DNS_REBINDING_PROTECTION")?.toBooleanStrictOrNull() ?: true
+    val mcpAllowedHosts: List<String>?
+        get() = System.getenv("MCP_ALLOWED_HOSTS")
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.takeIf { it.isNotEmpty() }
+    val mcpAllowedOrigins: List<String>?
+        get() = System.getenv("MCP_ALLOWED_ORIGINS")
+            ?.split(',')
+            ?.map { it.trim() }
+            ?.filter { it.isNotEmpty() }
+            ?.takeIf { it.isNotEmpty() }
+
     val retrievalTopK: Int get() = System.getenv("RETRIEVAL_TOP_K")?.toIntOrNull() ?: 5
     val retrievalChunkSize: Int get() = System.getenv("RETRIEVAL_CHUNK_SIZE")?.toIntOrNull() ?: 512
     val retrievalChunkOverlap: Int get() = System.getenv("RETRIEVAL_CHUNK_OVERLAP")?.toIntOrNull() ?: 50

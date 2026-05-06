@@ -6,10 +6,10 @@ import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
 import io.knowledgeos.tools.WriteGuidelineTool
-import io.ktor.server.routing.*
+import io.ktor.server.application.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.*
 import kotlinx.serialization.json.*
 
@@ -27,17 +27,23 @@ private fun String.prettyForLog(): String = try {
     this
 }
 
-fun Routing.mcpRoutes(
+fun Application.installMcpRoutes(
     searchDocsTool: SearchDocsTool,
     writeGuidelineTool: WriteGuidelineTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
-    listDocsTool: ListDocsTool
+    listDocsTool: ListDocsTool,
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
 ) {
-    route("/mcp") {
-        mcp {
-            createMcpServer(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
-        }
+    mcpStreamableHttp(
+        path = "/mcp",
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+    ) {
+        createMcpServer(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
     }
 }
 

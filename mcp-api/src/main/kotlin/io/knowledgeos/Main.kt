@@ -135,7 +135,10 @@ fun main() = runBlocking {
         writeGuidelineTool = writeGuidelineTool,
         updateDocTool = updateDocTool,
         getDocTool = getDocTool,
-        listDocsTool = listDocsTool
+        listDocsTool = listDocsTool,
+        enableDnsRebindingProtection = Config.mcpDnsRebindingProtection,
+        allowedHosts = Config.mcpAllowedHosts,
+        allowedOrigins = Config.mcpAllowedOrigins,
     )
 
     Runtime.getRuntime().addShutdownHook(Thread {
