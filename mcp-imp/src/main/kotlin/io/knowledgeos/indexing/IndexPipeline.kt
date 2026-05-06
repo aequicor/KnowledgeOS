@@ -81,6 +81,7 @@ class IndexPipeline(
         scope.launch {
             logger.info { "Indexing created document: ${doc.path}" }
             indexDocument(doc)
+            logger.info { "Indexed created document: ${doc.path}" }
         }
     }
 
@@ -89,6 +90,7 @@ class IndexPipeline(
             logger.info { "Re-indexing modified document: ${doc.path}" }
             deleteFromIndexes(doc.path.toString())
             indexDocument(doc)
+            logger.info { "Re-indexed modified document: ${doc.path}" }
         }
     }
 
