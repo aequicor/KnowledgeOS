@@ -9,6 +9,10 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 class VectorIndex(
     private val chromaUrl: String,
@@ -43,11 +47,7 @@ class VectorIndex(
         val id = collectionId()
         val ids = chunks.map { it.id }
         val metadatas = chunks.map { chunk ->
-            MetadataEntry(
-                docPath = chunk.docPath,
-                genre = chunk.frontmatter.genre,
-                topic = chunk.frontmatter.topic
-            )
+            buildMetadata(chunk.docPath, chunk.frontmatter.raw)
         }
         val documents = chunks.map { it.contextualizedText }
         val embedList = embeddings.map { it.toList() }
@@ -60,13 +60,11 @@ class VectorIndex(
         }
     }
 
-    suspend fun query(embedding: FloatArray, topK: Int, genre: String? = null, topic: String? = null): List<ScoredChunk> {
+    suspend fun query(embedding: FloatArray, topK: Int, filters: Map<String, String> = emptyMap()): List<ScoredChunk> {
         val id = collectionId()
         val embedList = embedding.toList()
-        val where = buildMap<String, String> {
-            genre?.takeIf { it.isNotBlank() }?.let { put("genre", it) }
-            topic?.takeIf { it.isNotBlank() }?.let { put("topic", it) }
-        }.takeIf { it.isNotEmpty() }
+        val whereMap = filters.filterValues { it.isNotBlank() }.filterKeys { it.isNotBlank() }
+        val where = whereMap.takeIf { it.isNotEmpty() }
 
         val response: ChromaQueryResponse = client.post("${collectionsBase()}/$id/query") {
             contentType(ContentType.Application.Json)
@@ -81,12 +79,13 @@ class VectorIndex(
         val ids = response.ids.firstOrNull() ?: emptyList()
         val distances = response.distances?.firstOrNull() ?: emptyList()
         val documents = response.documents?.firstOrNull() ?: emptyList<String?>()
-        val metadatas = response.metadatas?.firstOrNull() ?: emptyList<MetadataEntry?>()
+        val metadatas = response.metadatas?.firstOrNull() ?: emptyList<Map<String, JsonElement>?>()
 
         return ids.indices.map { i ->
+            val docPath = (metadatas.getOrNull(i)?.get("docPath") as? JsonPrimitive)?.content ?: ""
             ScoredChunk(
                 chunkId = ids[i],
-                docPath = metadatas[i]?.docPath ?: "",
+                docPath = docPath,
                 text = documents[i] ?: "",
                 score = 1.0 / (1.0 + (distances.getOrElse(i) { 0.0 }))
             )
@@ -103,6 +102,28 @@ class VectorIndex(
         } catch (e: Exception) { }
     }
 
+    private fun buildMetadata(docPath: String, frontmatter: Map<String, JsonElement>): Map<String, JsonPrimitive> {
+        val out = linkedMapOf<String, JsonPrimitive>()
+        out["docPath"] = JsonPrimitive(docPath)
+        for ((key, value) in frontmatter) {
+            if (key == "docPath") continue
+            when (value) {
+                is JsonPrimitive -> {
+                    val s = value.content
+                    if (s.isNotBlank()) out[key] = JsonPrimitive(s)
+                }
+                is JsonArray -> {
+                    val joined = value.mapNotNull { (it as? JsonPrimitive)?.content }
+                        .filter { it.isNotBlank() }
+                        .joinToString(",")
+                    if (joined.isNotBlank()) out[key] = JsonPrimitive(joined)
+                }
+                is JsonObject -> Unit
+            }
+        }
+        return out
+    }
+
     @Serializable
     private data class ChromaCreateRequest(val name: String)
 
@@ -110,17 +131,10 @@ class VectorIndex(
     private data class ChromaCollectionResponse(val id: String, val name: String)
 
     @Serializable
-    private data class MetadataEntry(
-        val docPath: String,
-        val genre: String,
-        val topic: String
-    )
-
-    @Serializable
     private data class ChromaUpsertRequest(
         val ids: List<String>,
         val embeddings: List<List<Float>>,
-        val metadatas: List<MetadataEntry>,
+        val metadatas: List<Map<String, JsonPrimitive>>,
         val documents: List<String>
     )
 
@@ -137,6 +151,6 @@ class VectorIndex(
         val ids: List<List<String>>,
         val distances: List<List<Double>>? = null,
         val documents: List<List<String?>>? = null,
-        val metadatas: List<List<MetadataEntry?>>? = null
+        val metadatas: List<List<Map<String, JsonElement>?>>? = null
     )
 }

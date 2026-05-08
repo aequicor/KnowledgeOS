@@ -5,7 +5,7 @@ import io.knowledgeos.tools.GetDocTool
 import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
-import io.knowledgeos.tools.WriteGuidelineTool
+import io.knowledgeos.tools.WriteDocTool
 import io.ktor.server.routing.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
@@ -17,21 +17,21 @@ private val mcpLog = KotlinLogging.logger {}
 
 fun Routing.mcpRoutes(
     searchDocsTool: SearchDocsTool,
-    writeGuidelineTool: WriteGuidelineTool,
+    writeDocTool: WriteDocTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
     listDocsTool: ListDocsTool
 ) {
     route("/mcp") {
         mcp {
-            createMcpServer(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
+            createMcpServer(searchDocsTool, writeDocTool, updateDocTool, getDocTool, listDocsTool)
         }
     }
 }
 
 private fun createMcpServer(
     searchDocsTool: SearchDocsTool,
-    writeGuidelineTool: WriteGuidelineTool,
+    writeDocTool: WriteDocTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
     listDocsTool: ListDocsTool
@@ -54,62 +54,60 @@ private fun createMcpServer(
                         put("type", JsonPrimitive("string"))
                         put("description", JsonPrimitive("Search query"))
                     })
-                    put("genre", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Optional genre filter: concept, how-to, reference, tutorial, guideline"))
-                    })
-                    put("topic", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Optional topic filter"))
+                    put("filters", buildJsonObject {
+                        put("type", JsonPrimitive("object"))
+                        put("description", JsonPrimitive("Optional metadata filters. Each key maps to an exact frontmatter field value (e.g. {\"kind\": \"rule\", \"tags\": \"db\"}). Empty values are ignored."))
+                        put("additionalProperties", buildJsonObject {
+                            put("type", JsonPrimitive("string"))
+                        })
                     })
                 },
                 required = listOf("query")
             ),
-            description = "Search documentation vault for relevant chunks. Returns top-K chunks from the retrieval pipeline."
+            description = "Search the markdown vault for chunks relevant to the query. Returns top-K results from BM25+vector retrieval with reranking. Filters match exact values of arbitrary frontmatter fields."
         )
     ) { request: CallToolRequest ->
         mcpLog.info { "search_docs arguments: ${request.arguments}" }
         val query = request.arguments?.get("query")?.jsonPrimitive?.content ?: ""
-        val genre = request.arguments?.get("genre")?.jsonPrimitive?.contentOrNull
-        val topic = request.arguments?.get("topic")?.jsonPrimitive?.contentOrNull
-        mcpLog.info { "search_docs query='$query' genre='$genre' topic='$topic'" }
-        val resultText = searchDocsTool.execute(SearchDocsTool.SearchParams(query, genre, topic))
+        val filters = request.arguments?.get("filters")?.jsonObject?.entries
+            ?.mapNotNull { (k, v) ->
+                val value = (v as? JsonPrimitive)?.contentOrNull
+                if (value != null) k to value else null
+            }
+            ?.toMap()
+        mcpLog.info { "search_docs query='$query' filters=$filters" }
+        val resultText = searchDocsTool.execute(SearchDocsTool.SearchParams(query, filters))
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
     server.addTool(
         Tool(
-            name = "write_guideline",
+            name = "write_doc",
             inputSchema = ToolSchema(
                 properties = buildJsonObject {
+                    put("path", buildJsonObject {
+                        put("type", JsonPrimitive("string"))
+                        put("description", JsonPrimitive("Path to the new document, relative to vault root. Must end with .md. Subdirectories are created if missing."))
+                    })
                     put("content", buildJsonObject {
                         put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Markdown content of the guideline"))
+                        put("description", JsonPrimitive("Markdown body content (without frontmatter)."))
                     })
-                    put("topic", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Topic name (used as filename)"))
-                    })
-                    put("library", buildJsonObject {
-                        put("type", JsonPrimitive("string"))
-                        put("description", JsonPrimitive("Optional library name"))
-                    })
-                    put("related", buildJsonObject {
-                        put("type", JsonPrimitive("array"))
-                        put("items", buildJsonObject { put("type", JsonPrimitive("string")) })
-                        put("description", JsonPrimitive("Optional related wikilinks"))
+                    put("frontmatter", buildJsonObject {
+                        put("type", JsonPrimitive("object"))
+                        put("description", JsonPrimitive("Optional free-form YAML frontmatter as a JSON object. Keys and values are user-defined. Example: {\"title\": \"My doc\", \"tags\": [\"db\", \"sql\"]}."))
+                        put("additionalProperties", JsonPrimitive(true))
                     })
                 },
-                required = listOf("content", "topic")
+                required = listOf("path", "content")
             ),
-            description = "Write a new guideline document to the vault. Creates a markdown file with proper frontmatter."
+            description = "Write or overwrite a markdown document at an arbitrary path inside the vault. Frontmatter is optional and free-form — KnowledgeOS does not enforce any schema."
         )
     ) { request: CallToolRequest ->
+        val path = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
         val content = request.arguments?.get("content")?.jsonPrimitive?.content ?: ""
-        val topic = request.arguments?.get("topic")?.jsonPrimitive?.content ?: ""
-        val library = request.arguments?.get("library")?.jsonPrimitive?.contentOrNull
-        val related = request.arguments?.get("related")?.jsonArray?.mapNotNull { it.jsonPrimitive.contentOrNull }
-        val resultText = writeGuidelineTool.execute(WriteGuidelineTool.WriteParams(content, topic, library, related))
+        val frontmatter = (request.arguments?.get("frontmatter") as? JsonObject)?.toMap()
+        val resultText = writeDocTool.execute(WriteDocTool.WriteParams(path, content, frontmatter))
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 

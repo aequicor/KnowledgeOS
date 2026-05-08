@@ -14,14 +14,16 @@ class DeepSeekContextualEnricher(
 
     override suspend fun enrich(chunks: List<Chunk>, document: Document): List<Chunk> {
         if (!enabled || chunks.isEmpty()) return chunks
+        val title = document.frontmatter.title
+        val prefix = if (title.isNotBlank()) "[$title] " else ""
         return chunks.map { chunk ->
             try {
                 val context = client.complete(
-                    prompt = buildContextPrompt(chunk.text, document.frontmatter.title),
+                    prompt = buildContextPrompt(chunk.text, title),
                     model = model
                 )
                 chunk.copy(
-                    contextualizedText = "[${document.frontmatter.genre}: ${document.frontmatter.title}] $context\n\n${chunk.text}"
+                    contextualizedText = "$prefix$context\n\n${chunk.text}"
                 )
             } catch (e: Exception) {
                 chunk

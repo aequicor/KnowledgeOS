@@ -36,13 +36,13 @@ AI-агент не просто выполняет задачи — он чит�
            │ задача                       │ ревью
            ▼                             ▼
 ┌──────────────────┐             ┌──────────────────┐
-│  Obsidian Vault  │◄────────────│    AI Agent      │
+│   Markdown Vault │◄────────────│    AI Agent      │
 │                  │  читает /   │    (OpenCode)    │
-│  concepts/       │  редактирует│                  │
-│  reference/      │             │  1. search_docs  │
-│  how-to/         │             │  2. читает доки  │
-│  tutorials/      │             │  3. пишет код    │
-│  guidelines/     │             │  4. пишет гайд   │
+│  любые .md       │  редактирует│                  │
+│  любая структура │             │  1. search_docs  │
+│  любой YAML      │             │  2. читает доки  │
+│  frontmatter     │             │  3. пишет код    │
+│                  │             │  4. write_doc    │
 │  [[wikilinks]]   │             │  5. update_doc   │
 └────────┬─────────┘             └────────┬─────────┘
          │ файлы                          │ search_docs()
@@ -65,70 +65,45 @@ AI-агент не просто выполняет задачи — он чит�
 
 ### Три компонента
 
-**Obsidian Vault** — мозг системы. Единственный источник истины. Хранит документацию по жанрам [Diátaxis](https://diataxis.fr/), связанную через `[[wikilinks]]`. Редактируется людьми и агентом.
+**Vault** — мозг системы. Единственный источник истины. Произвольная иерархия `.md`-файлов с произвольным YAML-frontmatter, связанная через `[[wikilinks]]`. KnowledgeOS не предписывает ни структуру папок, ни схему frontmatter. Опциональные рекомендации — в [docs/STRUCTURE-RECOMMENDATIONS.md](docs/STRUCTURE-RECOMMENDATIONS.md).
 
 **MCP Server** — нервная система. Индексирует vault, обрабатывает запросы агента. BM25 индекс персистируется на локальный диск, векторный индекс — в ChromaDB. Сервер можно перезапустить без полной переиндексации. Граф wikilinks поддерживается в памяти и обновляется инкрементально через file watcher; wikilinks разворачиваются on-demand при получении документа — если в чанке есть [[ссылки]], сервер автоматически загружает связанные документы. Реализован на Kotlin.
 
-**AI Agent (OpenCode)** — исполнитель. Единственный кто пишет код. Перед каждым действием читает документацию. После — обновляет гайдлайны и связанные документы через три инструмента: `search_docs`, `write_guideline`, `update_doc`.
+**AI Agent (OpenCode)** — исполнитель. Единственный кто пишет код. Перед каждым действием читает документацию. После — обновляет документы и создаёт новые через инструменты: `search_docs`, `write_doc`, `update_doc`, `get_doc`, `list_docs`.
 
 ---
 
 ## Структура Vault
 
+KnowledgeOS не предписывает структуру vault — индексируется произвольная иерархия `.md`-файлов с любым YAML-frontmatter. Любые поля frontmatter попадают в индекс как фильтруемые метаданные (`fm.<key>`), любая папка является валидным расположением.
+
+### Опциональная рекомендованная структура
+
+Если вы хотите готовый шаблон, оптимизированный под AI-агентов, см. [docs/STRUCTURE-RECOMMENDATIONS.md](docs/STRUCTURE-RECOMMENDATIONS.md). Краткий пример:
+
 ```
 vault/
-├── _INDEX.md                        # карта vault — точка входа агента
-│
-├── concepts/                        # ПОЧЕМУ и КАК устроено
-│   ├── architecture.md
-│   ├── domain-model.md
-│   └── decisions/                   # Architecture Decision Records
-│       ├── 001-use-postgres.md
-│       └── 002-no-orm.md
-│
-├── reference/                       # ЧТО ЕСТЬ — полные списки
-│   ├── api-endpoints.md
-│   ├── db-schema.md
-│   └── env-vars.md
-│
-├── how-to/                          # КАК СДЕЛАТЬ конкретную задачу
-│   ├── add-api-endpoint.md
-│   ├── add-db-migration.md
-│   └── write-tests.md
-│
-├── tutorials/                       # НАУЧИТЬСЯ — для новых людей
-│   └── onboarding.md
-│
-└── guidelines/                      # ПРАВИЛА — накапливаются агентом
-    ├── database.md
-    ├── testing.md
-    ├── error-handling.md
-    └── libs/
-        └── exposed.md               # правила работы с конкретными либами
+├── _index.md                # точка входа (опционально)
+├── rules/                   # короткие правила: "агент ДОЛЖЕН ..."
+├── patterns/                # переиспользуемые how-to с примерами кода
+├── decisions/               # ADR — почему выбрали X
+├── reference/               # API/схемы/конфиги
+└── domain/                  # бизнес-знания
 ```
 
-Жанровое разделение по [Diátaxis](https://diataxis.fr/): каждый документ отвечает на один тип вопроса — агент знает заранее где искать инструкции, где факты, а где правила.
+Минимальный полезный frontmatter:
 
-### Frontmatter документа
-
-```markdown
+```yaml
 ---
-genre: guideline           # concept | reference | how-to | tutorial | guideline
-title: Правила работы с БД
-topic: database
-library: exposed           # опционально — конкретная библиотека
-triggers:
-  - "db query"
-  - "transaction"
-  - "migration"
-related:
-  - [[reference/db-schema]]
-  - [[how-to/add-db-migration]]
-confidence: high           # low | medium | high
-source: agent              # agent | human
-updated: 2024-01
+title: Database transaction rules
+description: When and how to wrap DB mutations in transactions.
+kind: rule
+tags: [db, sql, transactions]
+updated: 2026-05
 ---
 ```
+
+Текущий vault в репозитории (`vault/`) — пример другого варианта структуры (Diátaxis с `concepts/`, `guidelines/`, и т.д.); он работает, но это не «единственно правильный» способ. Любая другая структура тоже работает.
 
 ### Wikilinks как граф знаний
 
@@ -150,34 +125,39 @@ updated: 2024-01
 
 ### Инструменты агента
 
-Агент видит три инструмента:
+Агент видит пять инструментов:
 
 ```
 search_docs(
-  query:  String,           // что ищем
-  genre:  String? = null,   // concept | how-to | reference | tutorial | guideline
-  topic:  String? = null,   // database | auth | testing | ...
+  query:   String,                       // что ищем
+  filters: Map<String, String>? = null,  // опц. фильтр по любым frontmatter-полям
+                                          //   например {"kind": "rule", "tags": "db"}
 ) → List<Chunk>
 
-write_guideline(
-  content: String,          // текст гайдлайна в markdown
-  topic:   String,          // куда положить
-  library: String? = null,  // если про конкретную либу
-  related: List<String>? = null, // [[wikilinks]] на связанные документы
-) → Unit
+write_doc(
+  path:        String,                  // путь относительно vault, должен оканчиваться на .md
+  content:     String,                  // markdown (без frontmatter)
+  frontmatter: Map<String, JsonElement>? = null,  // опц. произвольный YAML
+) → { status, path }
 
 update_doc(
-  path:    String,          // путь к существующему документу в vault
-  content: String,          // новое содержимое (полная замена или patch)
-) → Unit
+  path:                 String,         // путь к существующему документу
+  content:              String,         // новое содержимое
+  preserve_frontmatter: Boolean = false,// сохранить старый frontmatter, если новый отсутствует
+) → { status, path }
+
+get_doc(path: String) → markdown
+list_docs(directory: String? = null) → List<String>
 ```
+
+**Фильтры — произвольные.** `filters` сравнивает значения с любыми полями frontmatter ваших документов. Если у вас есть `kind: rule` — фильтруйте `{"kind": "rule"}`. Если `genre: concept` (старая схема) — `{"genre": "concept"}`. KnowledgeOS не знает заранее, какие у вас поля.
 
 ### Retrieval pipeline
 
 ```
 query
   │
-  ├─► [Metadata filter]     сужаем по genre/topic до поиска
+  ├─► [Metadata filter]     опц. сужение по любым frontmatter-полям
   │
   ├─► [BM25]                точные термины, имена функций, либ
   │
@@ -206,16 +186,16 @@ File watcher следит за vault. При изменении файла — �
 ```
 1. Агент получает задачу
         ↓
-2. search_docs("задача") → читает релевантные гайдлайны
+2. search_docs("задача") → читает релевантные документы
         ↓
 3. Выполняет задачу по правилам
         ↓
 4. Столкнулся с чем-то новым или нестандартным
         ↓
-5. write_guideline("правило...") → новый .md в guidelines/
-   update_doc([[existing-doc]], добавляет [[ссылку]] на новый гайдлайн)
+5. write_doc("rules/new-rule.md", ...) → новый .md по выбранному пути
+   update_doc(...) → обновляет существующий документ, добавляет [[ссылку]]
         ↓
-6. Следующая похожая задача → агент найдёт это правило сам
+6. Следующая похожая задача → агент найдёт это знание сам
 ```
 
 Петля замкнута. Агент накапливает знания автоматически; человек фокусируется на концептах, архитектурных решениях и ревью.
@@ -485,8 +465,10 @@ knowledgeos/
 │       │
 │       └── tools/
 │           ├── SearchDocsTool.kt      # MCP tool: search_docs
-│           ├── WriteGuidelineTool.kt  # MCP tool: write_guideline
-│           └── UpdateDocTool.kt       # MCP tool: update_doc
+│           ├── WriteDocTool.kt        # MCP tool: write_doc
+│           ├── UpdateDocTool.kt       # MCP tool: update_doc
+│           ├── GetDocTool.kt          # MCP tool: get_doc
+│           └── ListDocsTool.kt        # MCP tool: list_docs
 │
 └── mcp-imp/                           # реализация
     └── src/main/kotlin/

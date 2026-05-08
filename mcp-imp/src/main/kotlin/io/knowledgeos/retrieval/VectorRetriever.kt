@@ -26,8 +26,7 @@ class VectorRetriever(
         return vectorIndex.query(
             embedding = embedding,
             topK = topK * 2,
-            genre = filter.genre,
-            topic = filter.topic
+            filters = filter.filters
         )
     }
 }

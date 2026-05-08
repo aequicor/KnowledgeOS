@@ -4,7 +4,7 @@ import io.knowledgeos.tools.GetDocTool
 import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
-import io.knowledgeos.tools.WriteGuidelineTool
+import io.knowledgeos.tools.WriteDocTool
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
@@ -20,7 +20,7 @@ private val logger = KotlinLogging.logger {}
 class McpServer(
     private val port: Int,
     searchDocsTool: SearchDocsTool,
-    writeGuidelineTool: WriteGuidelineTool,
+    writeDocTool: WriteDocTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
     listDocsTool: ListDocsTool
@@ -36,7 +36,7 @@ class McpServer(
         }
         install(SSE)
         routing {
-            mcpRoutes(searchDocsTool, writeGuidelineTool, updateDocTool, getDocTool, listDocsTool)
+            mcpRoutes(searchDocsTool, writeDocTool, updateDocTool, getDocTool, listDocsTool)
         }
     }
 

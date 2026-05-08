@@ -1,6 +1,10 @@
 package io.knowledgeos.indexing
 
 import io.knowledgeos.retrieval.ScoredChunk
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import org.apache.lucene.analysis.standard.StandardAnalyzer
 import org.apache.lucene.document.Document as LuceneDoc
 import org.apache.lucene.document.Field
@@ -30,26 +34,48 @@ class Bm25Index(indexPath: Path) {
             doc.add(StringField("docId", chunk.id.substringBeforeLast("_"), Field.Store.NO))
             doc.add(StringField("docPath", chunk.docPath, Field.Store.YES))
             doc.add(TextField("text", chunk.contextualizedText, Field.Store.YES))
-            doc.add(StringField("genre", chunk.frontmatter.genre, Field.Store.YES))
-            doc.add(StringField("topic", chunk.frontmatter.topic, Field.Store.YES))
-            doc.add(StringField("library", chunk.frontmatter.library ?: "", Field.Store.YES))
-            doc.add(TextField("title", chunk.frontmatter.title, Field.Store.YES))
+
+            val title = chunk.frontmatter.title
+            if (title.isNotBlank()) {
+                doc.add(TextField("title", title, Field.Store.YES))
+            }
+
+            for ((key, value) in chunk.frontmatter.raw) {
+                addFrontmatterField(doc, key, value)
+            }
+
             writer.addDocument(doc)
         }
         writer.commit()
         refreshSearcher()
     }
 
-    fun search(query: String, topK: Int, genre: String? = null, topic: String? = null): List<ScoredChunk> {
+    private fun addFrontmatterField(doc: LuceneDoc, key: String, value: JsonElement) {
+        val fieldName = "fm.$key"
+        when (value) {
+            is JsonPrimitive -> addPrimitive(doc, fieldName, value)
+            is JsonArray -> value.forEach { item ->
+                if (item is JsonPrimitive) addPrimitive(doc, fieldName, item)
+            }
+            is JsonObject -> Unit
+        }
+    }
+
+    private fun addPrimitive(doc: LuceneDoc, fieldName: String, value: JsonPrimitive) {
+        val str = value.content
+        if (str.isNotBlank()) {
+            doc.add(StringField(fieldName, str, Field.Store.YES))
+        }
+    }
+
+    fun search(query: String, topK: Int, filters: Map<String, String> = emptyMap()): List<ScoredChunk> {
         val qp = QueryParser("text", analyzer)
-        val queryObj = qp.parse(query)
+        val queryObj = qp.parse(QueryParser.escape(query))
 
         val booleanQuery = BooleanQuery.Builder().add(queryObj, BooleanClause.Occur.MUST)
-        genre?.takeIf { it.isNotBlank() }?.let {
-            booleanQuery.add(TermQuery(Term("genre", it)), BooleanClause.Occur.FILTER)
-        }
-        topic?.takeIf { it.isNotBlank() }?.let {
-            booleanQuery.add(TermQuery(Term("topic", it)), BooleanClause.Occur.FILTER)
+        for ((key, value) in filters) {
+            if (key.isBlank() || value.isBlank()) continue
+            booleanQuery.add(TermQuery(Term("fm.$key", value)), BooleanClause.Occur.FILTER)
         }
 
         return executeQuery(booleanQuery.build(), topK)

@@ -12,7 +12,7 @@ class ChunkerTest {
 
     private fun document(body: String) = Document(
         path = KPath("test.md"),
-        frontmatter = Frontmatter(title = "Test"),
+        frontmatter = Frontmatter.ofStrings("title" to "Test"),
         body = body,
         wikilinks = emptyList()
     )

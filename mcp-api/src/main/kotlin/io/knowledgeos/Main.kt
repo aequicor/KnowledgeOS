@@ -7,7 +7,7 @@ import io.knowledgeos.tools.GetDocTool
 import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
-import io.knowledgeos.tools.WriteGuidelineTool
+import io.knowledgeos.tools.WriteDocTool
 import io.knowledgeos.vault.*
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -124,7 +124,7 @@ fun main() = runBlocking {
     )
 
     val searchDocsTool = SearchDocsTool(retrievalPipeline)
-    val writeGuidelineTool = WriteGuidelineTool(vaultPath)
+    val writeDocTool = WriteDocTool(vaultPath)
     val updateDocTool = UpdateDocTool(vaultPath)
     val getDocTool = GetDocTool(vaultPath)
     val listDocsTool = ListDocsTool(vaultPath)
@@ -132,7 +132,7 @@ fun main() = runBlocking {
     val mcpServer = McpServer(
         port = Config.serverPort,
         searchDocsTool = searchDocsTool,
-        writeGuidelineTool = writeGuidelineTool,
+        writeDocTool = writeDocTool,
         updateDocTool = updateDocTool,
         getDocTool = getDocTool,
         listDocsTool = listDocsTool

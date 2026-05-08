@@ -24,12 +24,17 @@ class Bm25IndexTest {
         tmpDir.toFile().deleteRecursively()
     }
 
-    private fun chunk(id: String, docPath: String, text: String) = Chunk(
+    private fun chunk(
+        id: String,
+        docPath: String,
+        text: String,
+        frontmatter: Frontmatter = Frontmatter.ofStrings("genre" to "guideline", "topic" to "test")
+    ) = Chunk(
         id = id,
         docPath = docPath,
         text = text,
         contextualizedText = text,
-        frontmatter = Frontmatter(genre = "guideline", topic = "test"),
+        frontmatter = frontmatter,
         position = id.substringAfterLast("_").toInt()
     )
 
@@ -74,5 +79,33 @@ class Bm25IndexTest {
 
         index.searchByDocId("alpha", topK = 10).shouldHaveSize(0)
         index.searchByDocId("beta", topK = 10).shouldHaveSize(1)
+    }
+
+    @Test
+    fun `search filters by arbitrary frontmatter field`() {
+        index.index(listOf(
+            chunk("a_0", "a.md", "shared keyword content",
+                frontmatter = Frontmatter.ofStrings("category" to "research")),
+            chunk("b_0", "b.md", "shared keyword content",
+                frontmatter = Frontmatter.ofStrings("category" to "tutorial")),
+        ))
+
+        val researchOnly = index.search("shared", topK = 10, filters = mapOf("category" to "research"))
+        researchOnly.shouldHaveSize(1)
+        researchOnly[0].docPath shouldBe "a.md"
+
+        val noFilter = index.search("shared", topK = 10)
+        noFilter.size shouldBe 2
+    }
+
+    @Test
+    fun `search with empty filter returns all matches`() {
+        index.index(listOf(
+            chunk("x_0", "x.md", "alpha"),
+            chunk("y_0", "y.md", "alpha"),
+        ))
+
+        val results = index.search("alpha", topK = 10, filters = emptyMap())
+        results.size shouldBe 2
     }
 }

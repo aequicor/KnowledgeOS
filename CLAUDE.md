@@ -30,11 +30,13 @@ docker compose -f docker-compose.yml -f docker-compose.local.yml up -d --build m
 
 ## Architecture
 
-KnowledgeOS is an MCP server that gives AI agents access to a documentation vault. The agent reads docs before acting and writes new guidelines after learning something new — the vault is the single source of truth, code is a byproduct.
+KnowledgeOS is an MCP server that gives AI agents access to a markdown vault. The agent searches, reads, and writes documents — the vault is the single source of truth, code is a byproduct.
+
+**Vault structure is user-defined.** KnowledgeOS does not enforce any folder layout or frontmatter schema. Any `.md` file with any YAML frontmatter is indexed; any frontmatter field becomes a filterable metadata key (`fm.<key>`). Opinionated defaults for users who want a recommended layout live in `docs/STRUCTURE-RECOMMENDATIONS.md`.
 
 **Two Gradle modules:**
 
-- `mcp-api` — entry point: MCP protocol handler, HTTP routes, three MCP tools (`search_docs`, `write_guideline`, `update_doc`)
+- `mcp-api` — entry point: MCP protocol handler, HTTP routes, five MCP tools (`search_docs`, `write_doc`, `update_doc`, `get_doc`, `list_docs`)
 - `mcp-imp` — implementation: vault file watching, frontmatter/wikilink parsing, chunking, contextual enrichment, BM25 + vector retrieval, RRF fusion, reranking
 
 `mcp-api` depends on `mcp-imp`. Convention plugin `buildsrc.convention.kotlin-jvm` applies Kotlin JVM + toolchain 21 to both modules.

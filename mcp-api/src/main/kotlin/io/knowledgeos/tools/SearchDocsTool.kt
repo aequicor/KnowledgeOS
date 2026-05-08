@@ -3,7 +3,6 @@ package io.knowledgeos.tools
 import io.knowledgeos.Config
 import io.knowledgeos.retrieval.MetadataFilter
 import io.knowledgeos.retrieval.RetrievalPipeline
-import io.knowledgeos.retrieval.ScoredChunk
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -13,8 +12,7 @@ class SearchDocsTool(private val pipeline: RetrievalPipeline) {
     @Serializable
     data class SearchParams(
         val query: String,
-        val genre: String? = null,
-        val topic: String? = null
+        val filters: Map<String, String>? = null
     )
 
     @Serializable
@@ -26,7 +24,7 @@ class SearchDocsTool(private val pipeline: RetrievalPipeline) {
     )
 
     suspend fun execute(params: SearchParams): String {
-        val filter = MetadataFilter(genre = params.genre, topic = params.topic)
+        val filter = MetadataFilter(filters = params.filters?.filterValues { it.isNotBlank() } ?: emptyMap())
         val chunks = pipeline.retrieve(
             query = params.query,
             topK = Config.retrievalTopK,
