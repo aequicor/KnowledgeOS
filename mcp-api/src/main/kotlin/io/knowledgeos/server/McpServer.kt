@@ -8,11 +8,6 @@ import io.knowledgeos.tools.WriteDocTool
 import io.ktor.server.application.*
 import io.ktor.server.cio.*
 import io.ktor.server.engine.*
-import io.ktor.server.plugins.contentnegotiation.*
-import io.ktor.server.routing.*
-import io.ktor.server.sse.*
-import io.ktor.serialization.kotlinx.json.*
-import kotlinx.serialization.json.Json
 import io.github.oshai.kotlinlogging.KotlinLogging
 
 private val logger = KotlinLogging.logger {}
@@ -23,21 +18,24 @@ class McpServer(
     writeDocTool: WriteDocTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
-    listDocsTool: ListDocsTool
+    listDocsTool: ListDocsTool,
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
 ) {
     private var server: Any? = null
 
     private val module: Application.() -> Unit = {
-        install(ContentNegotiation) {
-            json(Json {
-                ignoreUnknownKeys = true
-                isLenient = true
-            })
-        }
-        install(SSE)
-        routing {
-            mcpRoutes(searchDocsTool, writeDocTool, updateDocTool, getDocTool, listDocsTool)
-        }
+        installMcpRoutes(
+            searchDocsTool = searchDocsTool,
+            writeDocTool = writeDocTool,
+            updateDocTool = updateDocTool,
+            getDocTool = getDocTool,
+            listDocsTool = listDocsTool,
+            enableDnsRebindingProtection = enableDnsRebindingProtection,
+            allowedHosts = allowedHosts,
+            allowedOrigins = allowedOrigins,
+        )
     }
 
     fun start() {

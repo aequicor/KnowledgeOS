@@ -36,19 +36,28 @@ class IndexPipeline(
                 val allDocs = vaultReader.readAll()
                 val missing = allDocs.filter { it.path.toString() !in indexedPaths }
                 if (missing.isNotEmpty()) {
-                    logger.info { "Found ${missing.size} new documents not in index, indexing..." }
-                    for (doc in missing) {
+                    val total = missing.size
+                    logger.info { "Found $total new documents not in index, indexing..." }
+                    for ((i, doc) in missing.withIndex()) {
+                        val n = i + 1
+                        logger.info { "[$n/$total] ${doc.path.fileName}" }
                         indexDocument(doc)
+                        logger.info { "[$n/$total] done" }
                     }
+                    logger.info { "Incremental index complete: $total documents indexed" }
+                } else {
+                    logger.info { "Index is up to date, ${indexedPaths.size} documents indexed" }
                 }
             }
-        }
 
-        watcher.onCreated = { doc -> handleCreate(doc) }
-        watcher.onModified = { doc -> handleModify(doc) }
-        watcher.onDeleted = { path -> handleDelete(path) }
-        watcher.start()
-        logger.info { "Index pipeline started, watching $vaultPath" }
+            // Start watcher only after initial indexing is complete to avoid
+            // processing spurious OS events fired during the startup scan.
+            watcher.onCreated = { doc -> handleCreate(doc) }
+            watcher.onModified = { doc -> handleModify(doc) }
+            watcher.onDeleted = { path -> handleDelete(path) }
+            watcher.start()
+            logger.info { "Index pipeline started, watching $vaultPath" }
+        }
     }
 
     fun stop() {
@@ -57,31 +66,38 @@ class IndexPipeline(
 
     private suspend fun reindex(vaultPath: Path) {
         val documents = vaultReader.readAll()
-        logger.info { "Indexing ${documents.size} documents" }
-        for (doc in documents) {
+        val total = documents.size
+        logger.info { "Indexing $total documents" }
+        for ((i, doc) in documents.withIndex()) {
+            val n = i + 1
+            logger.info { "[$n/$total] ${doc.path.fileName}" }
             indexDocument(doc)
+            logger.info { "[$n/$total] done" }
         }
+        logger.info { "Reindex complete: $total documents indexed" }
     }
 
     private fun handleCreate(doc: Document) {
         scope.launch {
-            logger.debug { "Indexing created document: ${doc.path}" }
+            logger.info { "Indexing created document: ${doc.path}" }
             indexDocument(doc)
+            logger.info { "Indexed created document: ${doc.path}" }
         }
     }
 
     private fun handleModify(doc: Document) {
         scope.launch {
-            logger.debug { "Re-indexing modified document: ${doc.path}" }
+            logger.info { "Re-indexing modified document: ${doc.path}" }
             deleteFromIndexes(doc.path.toString())
             indexDocument(doc)
+            logger.info { "Re-indexed modified document: ${doc.path}" }
         }
     }
 
     private fun handleDelete(path: Path) {
         scope.launch {
             val docPath = path.toString()
-            logger.debug { "Deleting from indexes: $docPath" }
+            logger.info { "Deleting from indexes: $docPath" }
             deleteFromIndexes(docPath)
             val docId = path.fileName.toString().removeSuffix(".md")
             wikilinkGraph.remove(docId)

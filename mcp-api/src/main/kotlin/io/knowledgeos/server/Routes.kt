@@ -6,26 +6,44 @@ import io.knowledgeos.tools.ListDocsTool
 import io.knowledgeos.tools.SearchDocsTool
 import io.knowledgeos.tools.UpdateDocTool
 import io.knowledgeos.tools.WriteDocTool
-import io.ktor.server.routing.*
+import io.ktor.server.application.*
 import io.modelcontextprotocol.kotlin.sdk.server.Server
 import io.modelcontextprotocol.kotlin.sdk.server.ServerOptions
-import io.modelcontextprotocol.kotlin.sdk.server.mcp
+import io.modelcontextprotocol.kotlin.sdk.server.mcpStreamableHttp
 import io.modelcontextprotocol.kotlin.sdk.types.*
 import kotlinx.serialization.json.*
 
 private val mcpLog = KotlinLogging.logger {}
 
-fun Routing.mcpRoutes(
+private const val CYAN = "[36m"
+private const val GREEN = "[32m"
+private const val RESET = "[0m"
+
+private val prettyJson = Json { prettyPrint = true }
+
+private fun String.prettyForLog(): String = try {
+    prettyJson.encodeToString(prettyJson.parseToJsonElement(this))
+} catch (_: Exception) {
+    this
+}
+
+fun Application.installMcpRoutes(
     searchDocsTool: SearchDocsTool,
     writeDocTool: WriteDocTool,
     updateDocTool: UpdateDocTool,
     getDocTool: GetDocTool,
-    listDocsTool: ListDocsTool
+    listDocsTool: ListDocsTool,
+    enableDnsRebindingProtection: Boolean = true,
+    allowedHosts: List<String>? = null,
+    allowedOrigins: List<String>? = null,
 ) {
-    route("/mcp") {
-        mcp {
-            createMcpServer(searchDocsTool, writeDocTool, updateDocTool, getDocTool, listDocsTool)
-        }
+    mcpStreamableHttp(
+        path = "/mcp",
+        enableDnsRebindingProtection = enableDnsRebindingProtection,
+        allowedHosts = allowedHosts,
+        allowedOrigins = allowedOrigins,
+    ) {
+        createMcpServer(searchDocsTool, writeDocTool, updateDocTool, getDocTool, listDocsTool)
     }
 }
 
@@ -67,7 +85,6 @@ private fun createMcpServer(
             description = "Search the markdown vault for chunks relevant to the query. Returns top-K results from BM25+vector retrieval with reranking. Filters match exact values of arbitrary frontmatter fields."
         )
     ) { request: CallToolRequest ->
-        mcpLog.info { "search_docs arguments: ${request.arguments}" }
         val query = request.arguments?.get("query")?.jsonPrimitive?.content ?: ""
         val filters = request.arguments?.get("filters")?.jsonObject?.entries
             ?.mapNotNull { (k, v) ->
@@ -75,8 +92,9 @@ private fun createMcpServer(
                 if (value != null) k to value else null
             }
             ?.toMap()
-        mcpLog.info { "search_docs query='$query' filters=$filters" }
+        mcpLog.debug { "${CYAN}search_docs called: query='$query' filters=$filters${RESET}" }
         val resultText = searchDocsTool.execute(SearchDocsTool.SearchParams(query, filters))
+        mcpLog.debug { "${GREEN}search_docs result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -107,7 +125,9 @@ private fun createMcpServer(
         val path = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
         val content = request.arguments?.get("content")?.jsonPrimitive?.content ?: ""
         val frontmatter = (request.arguments?.get("frontmatter") as? JsonObject)?.toMap()
+        mcpLog.debug { "${CYAN}write_doc called: path='$path' frontmatter=$frontmatter\n$content${RESET}" }
         val resultText = writeDocTool.execute(WriteDocTool.WriteParams(path, content, frontmatter))
+        mcpLog.debug { "${GREEN}write_doc result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -137,7 +157,9 @@ private fun createMcpServer(
         val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
         val docContent = request.arguments?.get("content")?.jsonPrimitive?.content ?: ""
         val preserveFm = request.arguments?.get("preserve_frontmatter")?.jsonPrimitive?.booleanOrNull ?: false
+        mcpLog.debug { "${CYAN}update_doc called: path='$docPath' preserve_frontmatter=$preserveFm\n$docContent${RESET}" }
         val resultText = updateDocTool.execute(UpdateDocTool.UpdateParams(docPath, docContent, preserveFm))
+        mcpLog.debug { "${GREEN}update_doc result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -157,7 +179,9 @@ private fun createMcpServer(
         )
     ) { request: CallToolRequest ->
         val docPath = request.arguments?.get("path")?.jsonPrimitive?.content ?: ""
+        mcpLog.debug { "${CYAN}get_doc called: path='$docPath'${RESET}" }
         val resultText = getDocTool.execute(GetDocTool.GetParams(docPath))
+        mcpLog.debug { "${GREEN}get_doc result (path='$docPath'): ${resultText.take(200).replace('\n', ' ')}…${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 
@@ -177,7 +201,9 @@ private fun createMcpServer(
         )
     ) { request: CallToolRequest ->
         val dir = request.arguments?.get("directory")?.jsonPrimitive?.contentOrNull
+        mcpLog.debug { "${CYAN}list_docs called: directory=$dir${RESET}" }
         val resultText = listDocsTool.execute(ListDocsTool.ListParams(dir))
+        mcpLog.debug { "${GREEN}list_docs result:\n${resultText.prettyForLog()}${RESET}" }
         CallToolResult(content = listOf(TextContent(text = resultText)))
     }
 

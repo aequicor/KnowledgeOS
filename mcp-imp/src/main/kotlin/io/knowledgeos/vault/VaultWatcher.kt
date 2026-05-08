@@ -1,12 +1,19 @@
 package io.knowledgeos.vault
 
+import io.github.oshai.kotlinlogging.KotlinLogging
 import kotlinx.coroutines.*
-import java.nio.file.*
-import java.nio.file.StandardWatchEventKinds.*
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.attribute.FileTime
+import kotlin.io.path.isRegularFile
+import kotlin.io.path.name
+
+private val log = KotlinLogging.logger {}
 
 class VaultWatcher(
     private val vaultPath: Path,
     private val vaultReader: VaultReader,
+    private val pollIntervalMs: Long = 1_000,
     private val scope: CoroutineScope = CoroutineScope(Dispatchers.IO)
 ) {
 
@@ -14,85 +21,68 @@ class VaultWatcher(
     var onModified: ((Document) -> Unit)? = null
     var onDeleted: ((Path) -> Unit)? = null
 
-    private var watchService: WatchService? = null
     private var watchJob: Job? = null
-    private val watchedDirs = mutableSetOf<Path>()
+    private val snapshot = mutableMapOf<Path, FileTime>()
 
     fun start() {
-        watchService = FileSystems.getDefault().newWatchService()
-        registerAll(vaultPath)
+        snapshot.clear()
+        snapshot.putAll(scan())
+        log.info { "VaultWatcher started polling $vaultPath every ${pollIntervalMs}ms (${snapshot.size} files in snapshot)" }
         watchJob = scope.launch {
-            val watcher = watchService ?: return@launch
             while (isActive) {
-                try {
-                    val key = withContext(Dispatchers.IO) { watcher.poll() } ?: run {
-                        delay(100)
-                        continue
-                    }
-                    val dir = key.watchable() as Path
-                    for (event in key.pollEvents()) {
-                        val kind = event.kind()
-                        if (kind == OVERFLOW) continue
-                        val filename = event.context() as? Path ?: continue
-                        val fullPath = dir.resolve(filename)
-                        if (!fullPath.toString().endsWith(".md")) continue
-
-                        when (kind) {
-                            ENTRY_CREATE -> {
-                                registerNested(fullPath)
-                                handleCreate(fullPath)
-                            }
-                            ENTRY_MODIFY -> handleModify(fullPath)
-                            ENTRY_DELETE -> handleDelete(fullPath)
-                        }
-                    }
-                    if (!key.reset()) break
-                } catch (e: ClosedWatchServiceException) {
-                    break
-                } catch (e: CancellationException) {
-                    break
-                }
+                delay(pollIntervalMs)
+                poll()
             }
         }
     }
 
     fun stop() {
         watchJob?.cancel()
-        watchService?.close()
     }
 
-    private fun registerAll(dir: Path) {
-        if (Files.isDirectory(dir) && dir !in watchedDirs) {
+    private fun poll() {
+        val current = scan()
+
+        val created = current.keys - snapshot.keys
+        val deleted = snapshot.keys - current.keys
+        val modified = current.keys.intersect(snapshot.keys)
+            .filter { current[it] != snapshot[it] }
+
+        for (path in created) {
+            log.debug { "VaultWatcher: created $path" }
             try {
-                dir.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE)
-                watchedDirs.add(dir)
-                Files.list(dir).filter { Files.isDirectory(it) }.forEach { registerAll(it) }
-            } catch (_: Exception) { }
+                onCreated?.invoke(vaultReader.readFile(path))
+            } catch (e: Exception) {
+                log.warn(e) { "VaultWatcher: failed to read created file $path" }
+            }
         }
-    }
-
-    private fun registerNested(path: Path) {
-        if (Files.isDirectory(path)) {
-            registerAll(path)
+        for (path in modified) {
+            log.debug { "VaultWatcher: modified $path" }
+            try {
+                onModified?.invoke(vaultReader.readFile(path))
+            } catch (e: Exception) {
+                log.warn(e) { "VaultWatcher: failed to read modified file $path" }
+            }
         }
+        for (path in deleted) {
+            log.debug { "VaultWatcher: deleted $path" }
+            onDeleted?.invoke(vaultPath.relativize(path))
+        }
+
+        snapshot.clear()
+        snapshot.putAll(current)
     }
 
-    private fun handleCreate(path: Path) {
-        try {
-            val doc = vaultReader.readFile(path)
-            onCreated?.invoke(doc)
-        } catch (_: Exception) { }
-    }
-
-    private fun handleModify(path: Path) {
-        try {
-            val doc = vaultReader.readFile(path)
-            onModified?.invoke(doc)
-        } catch (_: Exception) { }
-    }
-
-    private fun handleDelete(path: Path) {
-        val relative = vaultPath.relativize(path)
-        onDeleted?.invoke(relative)
+    private fun scan(): Map<Path, FileTime> {
+        if (!Files.exists(vaultPath)) return emptyMap()
+        return try {
+            Files.walk(vaultPath)
+                .filter { it.isRegularFile() && it.name.endsWith(".md") }
+                .toList()
+                .associateWith { Files.getLastModifiedTime(it) }
+        } catch (e: Exception) {
+            log.warn(e) { "VaultWatcher: scan failed" }
+            emptyMap()
+        }
     }
 }

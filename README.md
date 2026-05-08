@@ -406,6 +406,38 @@ CHROMA_PORT=8000
 
 > **Важно:** добавьте `.env` в `.gitignore`, чтобы ключ `LLM_API_KEY` не попал в репозиторий.
 
+### Логирование
+
+По умолчанию сервер выводит логи на уровне `INFO`. Для диагностики доступен уровень `DEBUG` — он печатает параметры каждого вызова инструмента и усечённый результат (до 500 символов).
+
+```dotenv
+LOG_LEVEL=DEBUG
+```
+
+Локально:
+
+```bash
+LOG_LEVEL=DEBUG ./gradlew :mcp-api:run
+```
+
+В `docker-compose.local.yml`:
+
+```yaml
+services:
+  mcp-my-app:
+    environment:
+      - LOG_LEVEL=DEBUG
+```
+
+Пример вывода:
+
+```
+12:34:56.789 [eventLoop] DEBUG i.k.server.Routes - search_docs called: query='transaction rollback' genre=guideline topic=null
+12:34:56.923 [eventLoop] DEBUG i.k.server.Routes - search_docs result: [{"chunkId":"guidelines/database.md#0","docPath":…
+```
+
+---
+
 ### `docker-compose.local.yml` — параметры конкретного проекта
 
 Переменные, уникальные для каждого проекта, задаются в блоке `environment`:
