@@ -7,7 +7,6 @@ import io.ktor.client.request.*
 import io.ktor.http.*
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
@@ -30,7 +29,7 @@ class VectorIndex(
         collectionId = try {
             val resp: ChromaCollectionResponse = client.get("${collectionsBase()}/$collectionName").body()
             resp.id
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             val resp: ChromaCollectionResponse = client.post(collectionsBase()) {
                 contentType(ContentType.Application.Json)
                 setBody(json.encodeToString(ChromaCreateRequest(name = collectionName)))
@@ -99,7 +98,7 @@ class VectorIndex(
                 contentType(ContentType.Application.Json)
                 setBody(json.encodeToString(mapOf("where" to mapOf("docPath" to docPath))))
             }
-        } catch (e: Exception) { }
+        } catch (_: Exception) { }
     }
 
     private fun buildMetadata(docPath: String, frontmatter: Map<String, JsonElement>): Map<String, JsonPrimitive> {

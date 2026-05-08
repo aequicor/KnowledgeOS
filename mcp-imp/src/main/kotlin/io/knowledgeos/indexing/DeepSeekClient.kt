@@ -7,7 +7,6 @@ import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.json.Json
 
 private val logger = KotlinLogging.logger {}
 
@@ -16,8 +15,6 @@ class DeepSeekClient(
     private val apiKey: String,
     private val client: HttpClient
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
-
     suspend fun embed(texts: List<String>, model: String): List<FloatArray> {
         logger.trace { ">>> embed request: model=$model texts=${texts.size}" }
         return try {

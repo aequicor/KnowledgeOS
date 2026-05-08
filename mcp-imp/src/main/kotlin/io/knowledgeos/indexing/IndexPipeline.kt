@@ -30,7 +30,7 @@ class IndexPipeline(
         scope.launch {
             if (bm25Index.isEmpty()) {
                 logger.info { "BM25 index empty, performing full reindex" }
-                reindex(vaultPath)
+                reindex()
             } else {
                 val indexedPaths = bm25Index.allDocPaths()
                 val allDocs = vaultReader.readAll()
@@ -64,7 +64,7 @@ class IndexPipeline(
         watcher.stop()
     }
 
-    private suspend fun reindex(vaultPath: Path) {
+    private suspend fun reindex() {
         val documents = vaultReader.readAll()
         val total = documents.size
         logger.info { "Indexing $total documents" }

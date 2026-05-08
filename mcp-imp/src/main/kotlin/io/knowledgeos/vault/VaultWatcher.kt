@@ -7,6 +7,7 @@ import java.nio.file.Path
 import java.nio.file.attribute.FileTime
 import kotlin.io.path.isRegularFile
 import kotlin.io.path.name
+import kotlin.time.Duration.Companion.milliseconds
 
 private val log = KotlinLogging.logger {}
 
@@ -30,7 +31,7 @@ class VaultWatcher(
         log.info { "VaultWatcher started polling $vaultPath every ${pollIntervalMs}ms (${snapshot.size} files in snapshot)" }
         watchJob = scope.launch {
             while (isActive) {
-                delay(pollIntervalMs)
+                delay(pollIntervalMs.milliseconds)
                 poll()
             }
         }
